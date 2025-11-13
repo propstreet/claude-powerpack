@@ -1,0 +1,24 @@
+name: AI Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize] # triggers on new PR and each commit
+
+jobs:
+  ai-review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run AI Reviewer
+        uses: propstreet/reviewer@v2
+        with:
+          azureOpenAIEndpoint: ${{ secrets.AZURE_OPENAI_REASONING_ENDPOINT }}
+          azureOpenAIDeployment: ${{ secrets.AZURE_OPENAI_REASONING_DEPLOYMENT }}
+          azureOpenAIKey: ${{ secrets.AZURE_OPENAI_API_KEY }}
+          azureOpenAIVersion: ${{ secrets.AZURE_OPENAI_REASONING_VERSION }}
+          severity: "error"
+          reasoningEffort: "high"
+          tokenLimit: 150000
+          exclude: "dist/**/*"
+        env:
+          # Make sure GITHUB_TOKEN has write permissions to create reviews
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
