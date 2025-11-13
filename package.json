@@ -1,0 +1,26 @@
+{
+  "name": "claude-powerpack",
+  "version": "1.0.0",
+  "description": "Essential productivity tools for Claude Code: expert consultation docs, code extraction, and more",
+  "type": "module",
+  "scripts": {
+    "test": "node skills/ask-expert/scripts/extract-code.js --help",
+    "validate": "node --check skills/ask-expert/scripts/extract-code.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/propstreet/claude-powerpack.git"
+  },
+  "keywords": [
+    "claude-code",
+    "claude-plugin",
+    "productivity",
+    "code-extraction",
+    "developer-tools"
+  ],
+  "author": "Propstreet",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
