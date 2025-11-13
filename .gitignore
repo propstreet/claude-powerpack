@@ -1,0 +1,29 @@
+# macOS
+.DS_Store
+
+# Editor directories and files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+npm-debug.log*
+
+# Temporary files
+*.tmp
+.tmp/
+
+# Generated consultation documents (examples only)
+*-consultation.md
+consultation*.md
+
+# Node modules (if any scripts need dependencies)
+node_modules/
+
+# Package manager lockfiles
+package-lock.json
+yarn.lock
+pnpm-lock.yaml

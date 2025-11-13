@@ -1,0 +1,31 @@
+{
+  "name": "propstreet",
+  "owner": {
+    "name": "Propstreet",
+    "url": "https://github.com/propstreet"
+  },
+  "description": "Essential productivity tools for Claude Code: expert consultation docs, code extraction, and more",
+  "version": "1.0.0",
+  "plugins": [
+    {
+      "name": "claude-powerpack",
+      "source": "./",
+      "description": "Creates expert consultation documents with code extraction, git diffs, and size tracking (125KB limit). Use when user wants to prepare comprehensive technical documentation for external review, gather code context for architecture consultations, or create detailed technical analysis documents with full source context. Requires Node.js 18+.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Propstreet",
+        "url": "https://github.com/propstreet"
+      },
+      "homepage": "https://github.com/propstreet/claude-powerpack",
+      "repository": "https://github.com/propstreet/claude-powerpack",
+      "license": "MIT",
+      "keywords": [
+        "documentation",
+        "code-extraction",
+        "expert-consultation",
+        "productivity",
+        "code-review"
+      ]
+    }
+  ]
+}

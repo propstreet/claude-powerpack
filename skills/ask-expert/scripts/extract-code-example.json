@@ -1,0 +1,48 @@
+{
+  "output": "expert-consultation.md",
+  "trackSize": true,
+  "sections": [
+    {
+      "header": "What We Changed",
+      "files": [
+        "src/services/UserService.ts:diff",
+        "src/utils/ApiHelper.ts:diff=master..HEAD"
+      ]
+    },
+    {
+      "header": "Frontend Components",
+      "files": [
+        "src/components/UserProfile.vue",
+        "src/components/UserSettings.vue:1-100"
+      ]
+    },
+    {
+      "header": "API Layer",
+      "files": [
+        "src/api/users.ts",
+        "src/api/auth.ts",
+        "src/types/User.ts"
+      ]
+    },
+    {
+      "header": "Backend Services",
+      "files": [
+        "backend/services/UserService.cs:1-150",
+        "backend/services/AuthService.cs:200-400"
+      ]
+    },
+    {
+      "header": "Database Models",
+      "files": [
+        "backend/models/User.cs",
+        "backend/models/Session.cs:50-120"
+      ]
+    },
+    {
+      "header": "Test Examples",
+      "files": [
+        "tests/UserService.test.ts:100-200,500-600"
+      ]
+    }
+  ]
+}
