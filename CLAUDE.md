@@ -4,11 +4,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Claude Powerpack is a Claude Code plugin that provides productivity tools for creating expert consultation documents. The main component is the **ask-expert skill**, which helps extract code, track document size, and organize technical context for external review.
+Claude Powerpack is a Claude Code plugin that provides productivity tools for developers. It includes:
+
+- **update-pr skill** (v1.1.0) - Creates comprehensive PR descriptions by systematically reviewing all changes
+- **ask-expert skill** (v1.0.0) - Extracts code with size tracking for external expert consultation
 
 ## Repository Structure
 
 - `.claude-plugin/plugin.json` - Plugin metadata and configuration
+- `skills/update-pr/` - The update-pr skill implementation
+  - `SKILL.md` - Multi-phase workflow for comprehensive PR descriptions
+  - `EXAMPLES.md` - Good vs bad PR description examples
+  - `README.md` - User-facing documentation
 - `skills/ask-expert/` - The ask-expert skill implementation
   - `SKILL.md` - Skill definition loaded by Claude Code (with YAML frontmatter)
   - `EXAMPLES.md` - Detailed usage examples and patterns
@@ -29,7 +36,8 @@ This is a plugin repository with no build process. Testing is done by installing
 /plugin
 
 # Test skill activation (in Claude Code)
-"Create an expert consultation document for..."
+"Update the PR description"          # update-pr skill
+"Create an expert consultation document for..."  # ask-expert skill
 
 # Uninstall and reinstall after changes
 /plugin uninstall claude-powerpack
@@ -67,12 +75,17 @@ The plugin follows Claude Code's plugin specification:
 
 ### Skill Activation
 
-The ask-expert skill activates when users request:
+Skills activate based on their `description` field in SKILL.md frontmatter.
+
+**update-pr skill** activates when users request:
+- "update the PR description"
+- "prepare this PR for review"
+- "document the changes in this branch"
+
+**ask-expert skill** activates when users request:
 - "create an expert consultation document"
 - "prepare code for expert review"
 - "gather architecture context"
-
-Activation is defined in `skills/ask-expert/SKILL.md:2-3` (the `description` field).
 
 ### Code Extraction Script
 
@@ -169,20 +182,23 @@ The script validates git refs before attempting diffs (`skills/ask-expert/script
 Before submitting changes:
 
 1. ✅ Test locally using `/plugin install YOUR-USERNAME/claude-powerpack`
-2. ✅ Verify skill activation with trigger phrases
-3. ✅ Test extraction script with various file patterns
-4. ✅ Verify git diff functionality (if changed)
-5. ✅ Check size tracking accuracy
-6. ✅ Test error handling (missing files, invalid ranges, etc.)
-7. ✅ Update version in `plugin.json` if needed
+2. ✅ Verify skill activation with trigger phrases (both skills)
+3. ✅ Test update-pr skill on a branch with multiple commits
+4. ✅ Test extraction script with various file patterns
+5. ✅ Verify git diff functionality (if changed)
+6. ✅ Check size tracking accuracy
+7. ✅ Test error handling (missing files, invalid ranges, no PR, etc.)
+8. ✅ Update version in `plugin.json` if needed
 
 ## Version Management
 
 The plugin uses semantic versioning in `.claude-plugin/plugin.json`:
 ```json
 {
-  "version": "1.0.0"
+  "version": "1.1.0"
 }
 ```
 
-Skills document their version compatibility in their description field.
+Current skill versions:
+- `update-pr` - v1.1.0 (added in plugin v1.1.0)
+- `ask-expert` - v1.0.0 (added in plugin v1.0.0)

@@ -5,47 +5,38 @@ All notable changes to Claude Powerpack will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-11-26
+
+### Added
+
+#### Update PR Skill
+- New skill for creating comprehensive PR descriptions
+- 5-phase workflow: inventory, categorization, analysis, documentation, update
+- Multi-category documentation (features, fixes, tests, docs, config, build)
+- Structured output with user impact and technical notes sections
+- GitHub integration via `gh pr edit`
+- Auto-detection of default branch (main vs master)
+- Good vs bad examples in EXAMPLES.md
+
 ## [1.0.0] - 2025-01-13
 
 ### Added
 
 #### Ask Expert Skill
-- Expert consultation document creation with automated workflow
-- Code extraction script with multiple input formats:
-  - Full file extraction
-  - Line range extraction (single and multiple ranges)
-  - Git diff extraction (branch comparisons, commit ranges)
-- Real-time size tracking with warnings:
-  - 100KB warning threshold
-  - 115KB warning threshold
-  - 125KB hard limit
-- Multi-file batch processing in single command
-- Section organization with custom markdown headers
+- Expert consultation document creation with guided workflow
+- Code extraction script supporting full files, line ranges, and git diffs
+- Real-time size tracking with 125KB limit (warnings at 100KB, 115KB)
+- Multi-file batch processing and section organization
 - Config file support for reusable extraction plans (JSON)
-- Comprehensive documentation:
-  - SKILL.md with workflow guidance
-  - EXAMPLES.md with complete usage patterns
-  - README.md with quick reference
 
 #### Plugin Infrastructure
-- Claude Code plugin integration following official conventions
-- Marketplace support with proper plugin.json and marketplace.json
+- Claude Code plugin integration with marketplace support
 - Relative path handling for cross-installation compatibility
-- Node.js script with ESM module support
-- Git integration for diff functionality
+- Node.js 18+ with ESM module support
 
 #### Documentation
-- CLAUDE.md for development guidance
-- CONTRIBUTING.md with contribution guidelines
-- Complete installation instructions
-- Troubleshooting guide
-- MIT License
+- CLAUDE.md, CONTRIBUTING.md, and comprehensive skill documentation
+- Installation instructions and troubleshooting guide
 
-### Technical Details
-- Requires: Claude Code with plugin support
-- Requires: Node.js 18+
-- Requires: Git (for diff functionality)
-- Atomic file operations (validation before writes)
-- Append-mode support for incremental document building
-
+[1.1.0]: https://github.com/propstreet/claude-powerpack/releases/tag/v1.1.0
 [1.0.0]: https://github.com/propstreet/claude-powerpack/releases/tag/v1.0.0

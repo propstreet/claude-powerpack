@@ -10,22 +10,20 @@ This skill helps Claude create comprehensive technical consultation documents fo
 
 ## Quick Reference
 
-### Activation Triggers
+**Example prompts:**
+```
+"Create an expert consultation document for our authentication refactor"
+"Prepare code for expert review about our API design"
+"I need to ask an expert about our database schema"
+```
 
-- "Create an expert consultation document"
-- "Prepare code for expert review"
-- "Gather architecture context for external analysis"
-
-### What It Does
-
+**What it does:**
 - Guides you through structuring consultation documents
 - Extracts code with size tracking (125KB limit)
 - Organizes content with markdown sections
 - Supports full files, line ranges, and git diffs
 
-### Allowed Tools
-
-Bash, Read, Write, Edit
+**Allowed tools:** Bash, Read, Write, Edit
 
 ## Script Usage
 
@@ -65,4 +63,4 @@ node scripts/extract-code.js \
 
 ## License
 
-MIT - See [LICENSE](LICENSE)
+MIT - See [LICENSE](../../LICENSE)

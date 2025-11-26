@@ -3,9 +3,18 @@
 > Essential productivity tools for Claude Code: expert consultation docs, code extraction, and more
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.0.0-green.svg)](https://github.com/propstreet/claude-powerpack/releases)
+[![Version](https://img.shields.io/badge/version-1.1.0-green.svg)](https://github.com/propstreet/claude-powerpack/releases)
 
 ## Features
+
+### Update PR Skill
+
+Create comprehensive PR descriptions that document every meaningful change:
+
+- **Systematic Review**: Inventories ALL changed files and commits
+- **Multi-Category**: Features, bug fixes, tests, docs, config - nothing missed
+- **Structured Output**: Organized sections for user impact and technical details
+- **GitHub Integration**: Updates PR via `gh pr edit`
 
 ### Ask Expert Skill
 
@@ -52,22 +61,13 @@ You should see `claude-powerpack` in the list of installed plugins.
 
 ## Usage
 
+### Update PR Skill
+
+Ask Claude to update or prepare a PR description. Claude will systematically inventory all changes, categorize them, and create a structured summary. See [Skills Included](#skills-included) for example prompts.
+
 ### Ask Expert Skill
 
-The skill activates automatically when you ask Claude to create consultation documents:
-
-**Example prompts:**
-```
-"Create an expert consultation document for our authentication refactor"
-"Prepare code for expert review about our API design"
-"I need to ask an expert about our database schema"
-```
-
-Claude will:
-1. Help structure the problem context
-2. Extract relevant code using the bundled script
-3. Add architecture diagrams and context
-4. Format everything for expert review
+Ask Claude to create consultation documents for external expert review. Claude will structure the problem, extract relevant code with size tracking, and format everything within the 125KB token limit. See [Skills Included](#skills-included) for example prompts.
 
 ### Manual Code Extraction
 
@@ -110,6 +110,7 @@ See [skills/ask-expert/EXAMPLES.md](skills/ask-expert/EXAMPLES.md) for complete 
 - **Claude Code** with plugin support
 - **Node.js** 18+ (for code extraction script)
 - **Git** (for diff functionality)
+- **gh CLI** (for update-pr skill) - [Install](https://cli.github.com/)
 
 ## Team Setup
 
@@ -127,24 +128,50 @@ Team members who trust the repository folder will automatically have the plugin 
 
 ## Documentation
 
-- **[SKILL.md](skills/ask-expert/SKILL.md)** - Skill guide for Claude
-- **[EXAMPLES.md](skills/ask-expert/EXAMPLES.md)** - Detailed usage patterns
-- **[Skill README](skills/ask-expert/README.md)** - Complete skill documentation
+### Update PR Skill
+- **[SKILL.md](skills/update-pr/SKILL.md)** - Complete workflow for Claude
+- **[EXAMPLES.md](skills/update-pr/EXAMPLES.md)** - Good vs bad PR examples
+- **[README](skills/update-pr/README.md)** - Quick reference
+
+### Ask Expert Skill
+- **[SKILL.md](skills/ask-expert/SKILL.md)** - Complete workflow for Claude
+- **[EXAMPLES.md](skills/ask-expert/EXAMPLES.md)** - Usage patterns and workflows
+- **[README](skills/ask-expert/README.md)** - Quick reference
 
 ## Skills Included
 
+### update-pr (v1.1.0)
+
+**Example prompts:**
+```
+"Update the PR description"
+"Prepare this PR for review"
+"Document the changes in this branch"
+"Write a comprehensive PR summary"
+```
+
+**What it does:**
+- Inventories ALL changed files and commits systematically
+- Categorizes changes: features, bug fixes, tests, docs, config
+- Creates structured PR description with user impact section
+- Saves to `/tmp/pr-summary.md` and updates PR via `gh pr edit`
+
+**Allowed tools:** Bash, Read, Write, Edit, Glob, Grep
+
 ### ask-expert (v1.0.0)
 
-**Activation triggers:**
-- "create an expert consultation document"
-- "prepare code for expert review"
-- "gather architecture context"
+**Example prompts:**
+```
+"Create an expert consultation document for our authentication refactor"
+"Prepare code for expert review about our API design"
+"I need to ask an expert about our database schema"
+```
 
-**Capabilities:**
-- Structures consultation documents
-- Extracts code with size tracking
-- Organizes content for expert analysis
-- Ensures documents stay within LLM token limits
+**What it does:**
+- Structures consultation documents with problem context
+- Extracts code with real-time size tracking (125KB limit)
+- Supports full files, line ranges, and git diffs
+- Formats everything for external expert review
 
 **Allowed tools:** Bash, Read, Write, Edit
 
