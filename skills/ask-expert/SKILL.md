@@ -8,13 +8,6 @@ allowed-tools: [Bash, Read, Write, Edit]
 
 Create comprehensive technical consultation documents by extracting code, diffs, and architectural context within LLM token limits (125KB).
 
-## When to Use
-
-- User asks to "create an expert consultation document"
-- User wants to "prepare code for expert review"
-- User needs to "gather architecture context" for external analysis
-- User wants to document a complex bug or feature for consultation
-
 ## Document Structure
 
 Follow this proven structure:
