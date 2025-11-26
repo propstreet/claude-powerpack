@@ -35,14 +35,14 @@ This is a plugin repository with no build process. Testing is done by installing
 # Verify installation
 /plugin
 
-# Test skill activation (in Claude Code)
-"Update the PR description"          # update-pr skill
-"Create an expert consultation document for..."  # ask-expert skill
-
 # Uninstall and reinstall after changes
 /plugin uninstall claude-powerpack
 /plugin install YOUR-USERNAME/claude-powerpack
 ```
+
+**Test skill activation** by typing these prompts in Claude Code chat:
+- `Update the PR description` → update-pr skill
+- `Create an expert consultation document for...` → ask-expert skill
 
 ### Testing the Extraction Script
 
@@ -75,17 +75,9 @@ The plugin follows Claude Code's plugin specification:
 
 ### Skill Activation
 
-Skills activate based on their `description` field in SKILL.md frontmatter.
+Skills activate based on their `description` field in SKILL.md frontmatter. Claude matches user requests against these descriptions to determine which skill to invoke.
 
-**update-pr skill** activates when users request:
-- "update the PR description"
-- "prepare this PR for review"
-- "document the changes in this branch"
-
-**ask-expert skill** activates when users request:
-- "create an expert consultation document"
-- "prepare code for expert review"
-- "gather architecture context"
+See [README.md - Skills Included](README.md#skills-included) for example prompts that trigger each skill.
 
 ### Code Extraction Script
 
@@ -201,6 +193,6 @@ The plugin uses semantic versioning. **When bumping versions, update ALL of thes
 | `README.md` | Version badge URL |
 | `CHANGELOG.md` | New `## [x.y.z]` section + footer link |
 
-Current skill versions:
-- `update-pr` - added in plugin v1.1.0
-- `ask-expert` - added in plugin v1.0.0
+Skill history:
+- `update-pr` - introduced in v1.1.0
+- `ask-expert` - introduced in v1.0.0

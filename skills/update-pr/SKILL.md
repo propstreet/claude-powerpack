@@ -2,6 +2,8 @@
 name: update-pr
 description: Creates comprehensive PR descriptions by systematically reviewing ALL changes - features, bug fixes, tests, docs, and infrastructure. Use when user wants to update PR description, prepare PR for review, or document branch changes. Requires gh CLI.
 allowed-tools: [Bash, Read, Write, Edit, Glob, Grep]
+# Note: Glob/Grep are useful for finding files by pattern (e.g., *Test*.cs)
+# and searching commit messages or code when categorizing changes.
 ---
 
 # Comprehensive PR Description Creator
@@ -29,19 +31,30 @@ First, determine the base branch for comparison:
 
 ```bash
 # Get base branch from current PR (if one exists), otherwise fall back to default branch
-BASE_BRANCH=$(gh pr view --json baseRefName -q '.baseRefName' 2>/dev/null || (git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@') || echo "main")
+BASE_BRANCH=$( \
+  gh pr view --json baseRefName -q '.baseRefName' 2>/dev/null || \
+  git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null || \
+  echo 'refs/remotes/origin/main' \
+)
+BASE_BRANCH=${BASE_BRANCH#refs/remotes/origin/}
 ```
 
-Then run these commands in parallel (using `$BASE_BRANCH` from above):
+Then gather context (using `$BASE_BRANCH` from above). These commands are independent and can be run as separate tool calls:
 
 ```bash
-# Branch context
 gh pr status
+```
+
+```bash
 git status --short
+```
+
+```bash
 git diff origin/$BASE_BRANCH...HEAD --stat
 git diff origin/$BASE_BRANCH...HEAD --name-status
+```
 
-# Commit history (each commit tells a story)
+```bash
 git log origin/$BASE_BRANCH..HEAD --oneline --no-merges
 ```
 
@@ -224,8 +237,9 @@ gh pr create --title "Title" --body "WIP"
 # Check what base branch the PR is targeting
 gh pr view --json baseRefName -q '.baseRefName'
 
-# Or detect default branch if no PR exists (with fallback)
-(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@') || echo "main"
+# Or detect default branch if no PR exists (with guaranteed fallback)
+BASE=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null || echo 'refs/remotes/origin/main')
+echo ${BASE#refs/remotes/origin/}
 ```
 
 **gh CLI not authenticated:**

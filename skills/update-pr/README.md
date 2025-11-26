@@ -30,7 +30,7 @@ This skill helps Claude create thorough PR descriptions that document every mean
 
 The skill runs a 5-phase workflow:
 
-1. **Inventory** - Detects default branch, runs git diff/log commands
+1. **Inventory** - Detects base branch (from PR or default), runs git diff/log commands
 2. **Categorization** - Groups files by type (core, fixes, tests, docs, config)
 3. **Analysis** - Reviews each commit to understand what/why/impact
 4. **Documentation** - Creates structured PR description
