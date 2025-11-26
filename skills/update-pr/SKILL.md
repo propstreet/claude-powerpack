@@ -29,7 +29,7 @@ First, determine the base branch for comparison:
 
 ```bash
 # Get base branch from current PR (if one exists), otherwise fall back to default branch
-BASE_BRANCH=$(gh pr view --json baseRefName -q '.baseRefName' 2>/dev/null || git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@' || echo "main")
+BASE_BRANCH=$(gh pr view --json baseRefName -q '.baseRefName' 2>/dev/null || (git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@') || echo "main")
 ```
 
 Then run these commands in parallel (using `$BASE_BRANCH` from above):
@@ -219,13 +219,13 @@ gh pr create --title "Title" --body "WIP"
 # Then run the update process
 ```
 
-**Wrong base branch:**
+**Verify base branch:**
 ```bash
 # Check what base branch the PR is targeting
 gh pr view --json baseRefName -q '.baseRefName'
 
-# Or detect default branch if no PR exists
-git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@'
+# Or detect default branch if no PR exists (with fallback)
+(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@') || echo "main"
 ```
 
 **gh CLI not authenticated:**

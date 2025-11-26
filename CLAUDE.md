@@ -196,10 +196,11 @@ The plugin uses semantic versioning. **When bumping versions, update ALL of thes
 
 | File | Field/Location |
 |------|----------------|
-| `.claude-plugin/plugin.json` | `"version": "1.1.0"` |
-| `package.json` | `"version": "1.1.0"` |
+| `.claude-plugin/plugin.json` | `"version": "x.y.z"` |
+| `package.json` | `"version": "x.y.z"` |
 | `README.md` | Version badge URL |
+| `CHANGELOG.md` | New `## [x.y.z]` section + footer link |
 
 Current skill versions:
-- `update-pr` - v1.1.0 (added in plugin v1.1.0)
-- `ask-expert` - v1.0.0 (added in plugin v1.0.0)
+- `update-pr` - added in plugin v1.1.0
+- `ask-expert` - added in plugin v1.0.0
