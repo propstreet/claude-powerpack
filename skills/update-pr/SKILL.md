@@ -25,25 +25,27 @@ You MUST systematically review ALL changes and include them in the summary.
 
 ## Phase 1: Complete Change Inventory
 
-First, detect the default branch, then run inventory commands:
+First, determine the base branch for comparison:
 
 ```bash
-# Detect default branch (returns 'main' or 'master')
-git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@' || echo "main"
+# Get base branch from current PR (if one exists), otherwise fall back to default branch
+BASE_BRANCH=$(gh pr view --json baseRefName -q '.baseRefName' 2>/dev/null || git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@' || echo "main")
 ```
 
-Then run these commands in parallel (replace `$DEFAULT_BRANCH` with detected branch):
+Then run these commands in parallel (using `$BASE_BRANCH` from above):
 
 ```bash
 # Branch context
 gh pr status
 git status --short
-git diff origin/$DEFAULT_BRANCH...HEAD --stat
-git diff origin/$DEFAULT_BRANCH...HEAD --name-status
+git diff origin/$BASE_BRANCH...HEAD --stat
+git diff origin/$BASE_BRANCH...HEAD --name-status
 
 # Commit history (each commit tells a story)
-git log origin/$DEFAULT_BRANCH..HEAD --oneline --no-merges
+git log origin/$BASE_BRANCH..HEAD --oneline --no-merges
 ```
+
+**Note**: Using the PR's actual base branch ensures accurate diffs for release backports or PRs targeting non-default branches.
 
 ## Phase 2: Systematic File Analysis
 
@@ -219,9 +221,11 @@ gh pr create --title "Title" --body "WIP"
 
 **Wrong base branch:**
 ```bash
-# Detect default branch automatically
-DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@' || echo "main")
-git log origin/$DEFAULT_BRANCH..HEAD --oneline
+# Check what base branch the PR is targeting
+gh pr view --json baseRefName -q '.baseRefName'
+
+# Or detect default branch if no PR exists
+git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@'
 ```
 
 **gh CLI not authenticated:**

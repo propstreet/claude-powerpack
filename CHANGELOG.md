@@ -15,8 +15,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Multi-category documentation (features, fixes, tests, docs, config, build)
 - Structured output with user impact and technical notes sections
 - GitHub integration via `gh pr edit`
-- Auto-detection of default branch (main vs master)
+- Smart base branch detection (uses PR's actual base, falls back to default)
 - Good vs bad examples in EXAMPLES.md
+
+#### Requirements
+- Added gh CLI as a requirement (for update-pr skill)
+
+### Changed
+
+#### Documentation
+- Streamlined skill READMEs with consistent structure
+- Standardized terminology ("Example prompts" instead of "Activation triggers")
+- Removed redundant "When to Use" sections from SKILL.md files (DRY)
+- Condensed CHANGELOG entries for conciseness
+- Updated CLAUDE.md with both skills and version management guidance
+- Fixed broken license link in ask-expert/README.md
 
 ## [1.0.0] - 2025-01-13
 

@@ -192,12 +192,13 @@ Before submitting changes:
 
 ## Version Management
 
-The plugin uses semantic versioning in `.claude-plugin/plugin.json`:
-```json
-{
-  "version": "1.1.0"
-}
-```
+The plugin uses semantic versioning. **When bumping versions, update ALL of these files:**
+
+| File | Field/Location |
+|------|----------------|
+| `.claude-plugin/plugin.json` | `"version": "1.1.0"` |
+| `package.json` | `"version": "1.1.0"` |
+| `README.md` | Version badge URL |
 
 Current skill versions:
 - `update-pr` - v1.1.0 (added in plugin v1.1.0)

@@ -43,7 +43,7 @@ See [SKILL.md](SKILL.md) for the complete workflow details.
 1. **Let it run all phases** - Don't interrupt the systematic review
 2. **Review before updating** - Claude will show you the summary first
 3. **Provide context** - Mention important context Claude can't see in the code
-4. **Branch detection** - The skill auto-detects main vs master
+4. **Base branch detection** - Uses PR's actual base branch (supports release backports, non-default targets)
 
 ## Requirements
 
