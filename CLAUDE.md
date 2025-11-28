@@ -193,6 +193,25 @@ The plugin uses semantic versioning. **When bumping versions, update ALL of thes
 | `README.md` | Version badge URL |
 | `CHANGELOG.md` | New `## [x.y.z]` section + footer link |
 
+### Creating a Release
+
+After merging version bump to main:
+
+```bash
+# Switch to main and pull
+git checkout main && git pull
+
+# Create GitHub release (uses CHANGELOG content for notes)
+gh release create v1.1.1 --title "v1.1.1" --notes "$(cat <<'EOF'
+## Fixed
+
+- Description of fixes...
+
+See [CHANGELOG.md](https://github.com/propstreet/claude-powerpack/blob/main/CHANGELOG.md) for full details.
+EOF
+)"
+```
+
 Skill history:
 - `update-pr` - introduced in v1.1.0
 - `ask-expert` - introduced in v1.0.0
