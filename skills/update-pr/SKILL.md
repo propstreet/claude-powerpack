@@ -27,19 +27,21 @@ You MUST systematically review ALL changes and include them in the summary.
 
 ## Phase 1: Complete Change Inventory
 
-First, determine the base branch for comparison:
+First, determine the base branch for comparison. Run these commands separately:
 
+**Step 1: Try to get base branch from PR:**
 ```bash
-# Get base branch from current PR (if one exists), otherwise fall back to default branch
-BASE_BRANCH=$( \
-  gh pr view --json baseRefName -q '.baseRefName' 2>/dev/null || \
-  git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null || \
-  echo 'refs/remotes/origin/main' \
-)
-BASE_BRANCH="${BASE_BRANCH#refs/remotes/origin/}"
+gh pr view --json baseRefName -q '.baseRefName' 2>/dev/null
 ```
 
-Then gather context (using `$BASE_BRANCH` from above). These commands are independent and can be run as separate tool calls:
+**Step 2: If no PR exists (empty output above), get the default branch:**
+```bash
+git rev-parse --abbrev-ref origin/HEAD 2>/dev/null | sed 's#origin/##' || echo 'main'
+```
+
+Use the result as `BASE_BRANCH` for the commands below.
+
+Then gather context. These commands are independent and can be run as separate tool calls:
 
 **PR and working tree status:**
 ```bash
@@ -239,10 +241,11 @@ gh pr create --title "Title" --body "WIP"
 ```bash
 # Check what base branch the PR is targeting
 gh pr view --json baseRefName -q '.baseRefName'
+```
 
-# Or detect default branch if no PR exists (with guaranteed fallback)
-BASE=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null || echo 'refs/remotes/origin/main')
-echo "${BASE#refs/remotes/origin/}"
+```bash
+# Or detect default branch if no PR exists
+git rev-parse --abbrev-ref origin/HEAD 2>/dev/null | sed 's#origin/##' || echo 'main'
 ```
 
 **gh CLI not authenticated:**

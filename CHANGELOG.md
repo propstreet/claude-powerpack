@@ -5,6 +5,15 @@ All notable changes to Claude Powerpack will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2025-11-28
+
+### Fixed
+
+#### Update PR Skill
+- Fixed base branch detection command syntax that failed when passed as command string
+- Replaced multi-line `$(...)` with backslash continuations with separate commands
+- Changed `git symbolic-ref` to `git rev-parse --abbrev-ref` for simpler branch name extraction
+
 ## [1.1.0] - 2025-11-26
 
 ### Added
@@ -51,5 +60,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CLAUDE.md, CONTRIBUTING.md, and comprehensive skill documentation
 - Installation instructions and troubleshooting guide
 
+[1.1.1]: https://github.com/propstreet/claude-powerpack/releases/tag/v1.1.1
 [1.1.0]: https://github.com/propstreet/claude-powerpack/releases/tag/v1.1.0
 [1.0.0]: https://github.com/propstreet/claude-powerpack/releases/tag/v1.0.0
