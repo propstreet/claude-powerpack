@@ -3,7 +3,7 @@
 > Essential productivity tools for Claude Code: expert consultation docs, code extraction, and more
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.1.0-green.svg)](https://github.com/propstreet/claude-powerpack/releases)
+[![Version](https://img.shields.io/badge/version-1.1.1-green.svg)](https://github.com/propstreet/claude-powerpack/releases)
 
 ## Features
 
