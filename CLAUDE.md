@@ -6,8 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Claude Powerpack is a Claude Code plugin that provides productivity tools for developers. It includes:
 
-- **update-pr skill** (v1.1.0) - Creates comprehensive PR descriptions by systematically reviewing all changes
-- **ask-expert skill** (v1.0.0) - Extracts code with size tracking for external expert consultation
+- **update-pr skill** - Creates comprehensive PR descriptions by systematically reviewing all changes
+- **ask-expert skill** - Extracts code with size tracking for external expert consultation
 
 ## Repository Structure
 
@@ -99,18 +99,27 @@ See [README.md - Skills Included](README.md#skills-included) for example prompts
 
 When modifying the ask-expert skill or creating new skills:
 
-### SKILL.md Requirements
+### SKILL.md Requirements (Claude Code 2.1.x)
 
 ```yaml
 ---
 name: skill-name
-description: Clear description with trigger phrases. Mention when to use.
-allowed-tools: [Bash, Read, Write, Edit]
+description: Clear description with trigger phrases. Use when user asks to "do X", "perform Y", or needs Z.
+allowed-tools:
+  - Read
+  - Write
+  - Edit
+  - Bash(git:*)
+  - Bash(node:*)
+user-invocable: true
+context: fork
 ---
 ```
 
-- **description** must include activation trigger phrases
-- **allowed-tools** restricts which Claude Code tools the skill can use
+- **description** must include activation trigger phrases in quotes for auto-discovery
+- **allowed-tools** use YAML array format with Bash wildcard patterns (e.g., `Bash(git:*)`) for security
+- **user-invocable** explicitly declare if skill appears in slash menu
+- **context: fork** runs skill in isolated sub-agent (keeps main conversation clean)
 - Keep SKILL.md under 500 lines (move detailed examples to EXAMPLES.md)
 
 ### Progressive Disclosure Pattern
@@ -212,6 +221,3 @@ EOF
 )"
 ```
 
-Skill history:
-- `update-pr` - introduced in v1.1.0
-- `ask-expert` - introduced in v1.0.0
