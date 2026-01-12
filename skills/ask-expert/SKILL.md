@@ -1,7 +1,17 @@
 ---
 name: ask-expert
-description: Creates expert consultation documents with code extraction, git diffs, and size tracking (125KB limit). Use when user wants to prepare comprehensive technical documentation for external review, gather code context for architecture consultations, or create detailed technical analysis documents with full source context. Requires Node.js 18+.
-allowed-tools: [Bash, Read, Write, Edit]
+description: Creates expert consultation documents with code extraction, git diffs, and size tracking (125KB limit). Use when user asks to "create an expert consultation document", "prepare code for expert review", "gather architecture context", or needs comprehensive technical documentation for external analysis. Requires Node.js 18+.
+allowed-tools:
+  - Read
+  - Write
+  - Edit
+  - Bash(node:*)
+  - Bash(git:*)
+  - Bash(wc:*)
+  - Bash(ls:*)
+  - Bash(cat:*)
+user-invocable: true
+context: fork
 ---
 
 # Expert Consultation Document Creator

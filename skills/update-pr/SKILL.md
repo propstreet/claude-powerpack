@@ -1,9 +1,16 @@
 ---
 name: update-pr
-description: Creates comprehensive PR descriptions by systematically reviewing ALL changes - features, bug fixes, tests, docs, and infrastructure. Use when user wants to update PR description, prepare PR for review, or document branch changes. Requires gh CLI.
-allowed-tools: [Bash, Read, Write, Edit, Glob, Grep]
-# Note: Glob/Grep are useful for finding files by pattern (e.g., *Test*.cs)
-# and searching code content when categorizing changes.
+description: Creates comprehensive PR descriptions by systematically reviewing ALL changes - features, bug fixes, tests, docs, and infrastructure. Use when user asks to "update the PR", "prepare PR for review", "write PR description", or "document branch changes". Requires gh CLI.
+allowed-tools:
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
+  - Bash(gh:*)
+  - Bash(git:*)
+user-invocable: true
+context: fork
 ---
 
 # Comprehensive PR Description Creator

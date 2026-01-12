@@ -5,6 +5,21 @@ All notable changes to Claude Powerpack will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-01-12
+
+### Changed
+
+#### Claude Code 2.1.x Compatibility
+- Updated skill frontmatter to use YAML array format for `allowed-tools`
+- Restricted Bash permissions with wildcard patterns (e.g., `Bash(git:*)`, `Bash(node:*)`) for improved security
+- Added `user-invocable: true` explicitly to both skills
+- Added `context: fork` to run skills in isolated sub-agent contexts (keeps main conversation clean)
+- Enhanced trigger phrases in skill descriptions for better auto-discovery
+
+#### Plugin Manifest
+- Added `license`, `homepage`, and explicit `skills` path to plugin.json
+- Added `pr-description` keyword
+
 ## [1.1.1] - 2025-11-28
 
 ### Fixed
@@ -60,6 +75,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CLAUDE.md, CONTRIBUTING.md, and comprehensive skill documentation
 - Installation instructions and troubleshooting guide
 
+[1.2.0]: https://github.com/propstreet/claude-powerpack/releases/tag/v1.2.0
 [1.1.1]: https://github.com/propstreet/claude-powerpack/releases/tag/v1.1.1
 [1.1.0]: https://github.com/propstreet/claude-powerpack/releases/tag/v1.1.0
 [1.0.0]: https://github.com/propstreet/claude-powerpack/releases/tag/v1.0.0
