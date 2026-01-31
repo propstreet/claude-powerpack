@@ -29,6 +29,18 @@ const WARNING_THRESHOLD_1 = 100 * 1024;
 /** Warning threshold at 115 KB (very close to limit) */
 const WARNING_THRESHOLD_2 = 115 * 1024;
 
+// ============================================================================
+// Custom Errors
+// ============================================================================
+
+/** Error thrown when output exceeds the size limit */
+class SizeLimitError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "SizeLimitError";
+  }
+}
+
 /** Regex pattern for parsing file arguments with ranges/diffs */
 const FILE_ARG_PATTERN = /^(.+?):([\d,:-]+|diff(?:=.+)?)$/;
 
@@ -49,11 +61,11 @@ function formatSize(bytes) {
  * Check size thresholds and throw if limit exceeded
  * @param {number} totalBytes - Current total size in bytes
  * @param {boolean} logWarnings - Whether to log warning messages
- * @throws {Error} If size exceeds MAX_SIZE_BYTES
+ * @throws {SizeLimitError} If size exceeds MAX_SIZE_BYTES
  */
 function checkSizeThresholds(totalBytes, logWarnings = true) {
   if (totalBytes >= MAX_SIZE_BYTES) {
-    throw new Error(
+    throw new SizeLimitError(
       `Exceeded ${formatSize(MAX_SIZE_BYTES)} limit (${formatSize(totalBytes)}). ` +
       `Stop processing to stay within expert consultation limits.`
     );
@@ -275,7 +287,7 @@ function readDiffContent(filePath, diffRange) {
     const relativePath = path.relative(gitRoot, filePath).split(path.sep).join("/");
 
     // Validate file is within the repository
-    if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
+    if (relativePath === ".." || relativePath.startsWith("../") || path.isAbsolute(relativePath)) {
       throw new Error(
         `File is outside the git repository: ${filePath}\n` +
         `  Repository root: ${gitRoot}`
@@ -859,11 +871,30 @@ function main() {
   }
 
   // Validate git options (--staged and/or --commit)
+  let gitRepoValid = false;
   if (hasGitOptions) {
+    // First validate git repository
     try {
       validateGitRepository();
+      gitRepoValid = true;
+    } catch (error) {
+      // Push separate error for each flag that requires git
+      if (args.staged) {
+        validationErrors.push({
+          fileArg: "--staged",
+          error: error.message,
+        });
+      }
+      for (const commitRef of commits) {
+        validationErrors.push({
+          fileArg: `--commit=${commitRef}`,
+          error: error.message,
+        });
+      }
+    }
 
-      // Validate each commit reference
+    // Then validate each commit reference (only if repo is valid)
+    if (gitRepoValid) {
       for (const commitRef of commits) {
         try {
           // Validate it's specifically a commit (not just any rev)
@@ -877,16 +908,6 @@ function main() {
           });
         }
       }
-    } catch (error) {
-      // Git repository validation failed
-      const flags = [
-        args.staged && "--staged",
-        commits.length > 0 && "--commit",
-      ].filter(Boolean).join(", ");
-      validationErrors.push({
-        fileArg: flags,
-        error: error.message,
-      });
     }
   }
 
@@ -941,7 +962,7 @@ function main() {
       checkSizeThresholds(totalBytes, args["track-size"]);
     } catch (error) {
       // Re-throw size limit errors to exit immediately
-      if (error.message.includes("limit")) {
+      if (error instanceof SizeLimitError) {
         throw error;
       }
       console.error(`❌ Error getting staged changes: ${error.message}`);
@@ -974,7 +995,7 @@ function main() {
         checkSizeThresholds(totalBytes, args["track-size"]);
       } catch (error) {
         // Re-throw size limit errors to exit immediately
-        if (error.message.includes("limit")) {
+        if (error instanceof SizeLimitError) {
           throw error;
         }
         console.error(`❌ Error getting commit ${commitRef}: ${error.message}`);
@@ -1021,7 +1042,7 @@ function main() {
       checkSizeThresholds(totalBytes, args["track-size"]);
     } catch (error) {
       // Re-throw size limit errors to exit immediately
-      if (error.message.includes("limit")) {
+      if (error instanceof SizeLimitError) {
         throw error;
       }
       console.error(`❌ Error processing "${fileArg}": ${error.message}`);
@@ -1146,7 +1167,7 @@ function processConfigFile(config, args) {
         checkSizeThresholds(totalBytes, trackSize);
       } catch (error) {
         // Re-throw size limit errors to exit immediately
-        if (error.message.includes("limit")) {
+        if (error instanceof SizeLimitError) {
           throw error;
         }
         console.error(
