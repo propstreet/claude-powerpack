@@ -858,22 +858,12 @@ function main() {
     }
   }
 
-  // Validate --staged option (requires git repository)
-  if (args.staged) {
+  // Validate git options (--staged and/or --commit)
+  if (hasGitOptions) {
     try {
       validateGitRepository();
-    } catch (error) {
-      validationErrors.push({
-        fileArg: "--staged",
-        error: error.message,
-      });
-    }
-  }
 
-  // Validate --commit options (requires git repository and valid commit refs)
-  if (commits.length > 0) {
-    try {
-      validateGitRepository();
+      // Validate each commit reference
       for (const commitRef of commits) {
         try {
           // Validate it's specifically a commit (not just any rev)
@@ -888,8 +878,13 @@ function main() {
         }
       }
     } catch (error) {
+      // Git repository validation failed
+      const flags = [
+        args.staged && "--staged",
+        commits.length > 0 && "--commit",
+      ].filter(Boolean).join(", ");
       validationErrors.push({
-        fileArg: "--commit",
+        fileArg: flags,
         error: error.message,
       });
     }
