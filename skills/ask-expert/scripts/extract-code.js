@@ -46,23 +46,21 @@ function formatSize(bytes) {
 }
 
 /**
- * Check size thresholds and exit if limit exceeded
+ * Check size thresholds and throw if limit exceeded
  * @param {number} totalBytes - Current total size in bytes
  * @param {boolean} logWarnings - Whether to log warning messages
+ * @throws {Error} If size exceeds MAX_SIZE_BYTES
  */
 function checkSizeThresholds(totalBytes, logWarnings = true) {
   if (totalBytes >= MAX_SIZE_BYTES) {
-    console.error(
-      `❌ Error: Exceeded 125 KB limit (${formatSize(totalBytes)})`
+    throw new Error(
+      `Exceeded ${formatSize(MAX_SIZE_BYTES)} limit (${formatSize(totalBytes)}). ` +
+      `Stop processing to stay within expert consultation limits.`
     );
-    console.error(
-      `   Stop processing to stay within expert consultation limits`
-    );
-    process.exit(1);
   } else if (logWarnings && totalBytes >= WARNING_THRESHOLD_2) {
-    console.error(`⚠️  Very close to 125 KB limit!`);
+    console.error(`⚠️  Very close to ${formatSize(MAX_SIZE_BYTES)} limit!`);
   } else if (logWarnings && totalBytes >= WARNING_THRESHOLD_1) {
-    console.error(`⚠️  Approaching 100 KB`);
+    console.error(`⚠️  Approaching ${formatSize(WARNING_THRESHOLD_1)}`);
   }
 }
 
@@ -275,6 +273,14 @@ function readDiffContent(filePath, diffRange) {
     }).trim();
     // Normalize to POSIX separators for git on Windows
     const relativePath = path.relative(gitRoot, filePath).split(path.sep).join("/");
+
+    // Validate file is within the repository
+    if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
+      throw new Error(
+        `File is outside the git repository: ${filePath}\n` +
+        `  Repository root: ${gitRoot}`
+      );
+    }
 
     // Build args conditionally (diffRange may be undefined)
     const args = ["-c", "color.ui=false", "diff", "--no-ext-diff"];
@@ -933,12 +939,16 @@ function main() {
       if (args["track-size"]) {
         const percent = ((totalBytes / MAX_SIZE_BYTES) * 100).toFixed(1);
         console.error(
-          `[staged] git diff --cached → +${formatSize(contentSize)} (${formatSize(totalBytes)} / 125 KB, ${percent}%)`
+          `[staged] git diff --cached → +${formatSize(contentSize)} (${formatSize(totalBytes)} / ${formatSize(MAX_SIZE_BYTES)}, ${percent}%)`
         );
       }
       // Always enforce size limit, only log warnings if tracking
       checkSizeThresholds(totalBytes, args["track-size"]);
     } catch (error) {
+      // Re-throw size limit errors to exit immediately
+      if (error.message.includes("limit")) {
+        throw error;
+      }
       console.error(`❌ Error getting staged changes: ${error.message}`);
       hasErrors = true;
     }
@@ -962,12 +972,16 @@ function main() {
         if (args["track-size"]) {
           const percent = ((totalBytes / MAX_SIZE_BYTES) * 100).toFixed(1);
           console.error(
-            `[commit] ${commitRef} → +${formatSize(contentSize)} (${formatSize(totalBytes)} / 125 KB, ${percent}%)`
+            `[commit] ${commitRef} → +${formatSize(contentSize)} (${formatSize(totalBytes)} / ${formatSize(MAX_SIZE_BYTES)}, ${percent}%)`
           );
         }
         // Always enforce size limit, only log warnings if tracking
         checkSizeThresholds(totalBytes, args["track-size"]);
       } catch (error) {
+        // Re-throw size limit errors to exit immediately
+        if (error.message.includes("limit")) {
+          throw error;
+        }
         console.error(`❌ Error getting commit ${commitRef}: ${error.message}`);
         hasErrors = true;
       }
@@ -1005,12 +1019,16 @@ function main() {
         const percent = ((totalBytes / MAX_SIZE_BYTES) * 100).toFixed(1);
         const filename = path.basename(fileArg.split(":")[0]);
         console.error(
-          `[${index + 1}/${fileArgs.length}] ${filename} → +${formatSize(contentSize)} (${formatSize(totalBytes)} / 125 KB, ${percent}%)`
+          `[${index + 1}/${fileArgs.length}] ${filename} → +${formatSize(contentSize)} (${formatSize(totalBytes)} / ${formatSize(MAX_SIZE_BYTES)}, ${percent}%)`
         );
       }
       // Always enforce size limit, only log warnings if tracking
       checkSizeThresholds(totalBytes, args["track-size"]);
     } catch (error) {
+      // Re-throw size limit errors to exit immediately
+      if (error.message.includes("limit")) {
+        throw error;
+      }
       console.error(`❌ Error processing "${fileArg}": ${error.message}`);
       hasErrors = true;
     }
@@ -1028,7 +1046,7 @@ function main() {
     const status = hasErrors ? "⚠️  Completed with errors" : "✅ Saved";
     const itemCount = `${results.length} ${results.length === 1 ? "item" : "items"}`;
     console.error(
-      `${status}: ${itemCount} to ${args.output} (${formatSize(totalBytes)} / 125 KB)`
+      `${status}: ${itemCount} to ${args.output} (${formatSize(totalBytes)} / ${formatSize(MAX_SIZE_BYTES)})`
     );
   }
 
@@ -1126,25 +1144,16 @@ function processConfigFile(config, args) {
           const percent = ((totalBytes / MAX_SIZE_BYTES) * 100).toFixed(1);
           const filename = path.basename(fileArg.split(":")[0]);
           console.error(
-            `  [${fileIndex + 1}/${section.files.length}] ${filename} → +${formatSize(contentSize)} (${formatSize(totalBytes)} / 125 KB, ${percent}%)`
+            `  [${fileIndex + 1}/${section.files.length}] ${filename} → +${formatSize(contentSize)} (${formatSize(totalBytes)} / ${formatSize(MAX_SIZE_BYTES)}, ${percent}%)`
           );
-
-          // Check thresholds
-          if (totalBytes >= MAX_SIZE_BYTES) {
-            console.error(
-              `❌ Error: Exceeded 125 KB limit (${formatSize(totalBytes)})`
-            );
-            console.error(
-              `   Stop processing to stay within expert consultation limits`
-            );
-            process.exit(1);
-          } else if (totalBytes >= WARNING_THRESHOLD_2) {
-            console.error(`⚠️  Very close to 125 KB limit!`);
-          } else if (totalBytes >= WARNING_THRESHOLD_1) {
-            console.error(`⚠️  Approaching 100 KB`);
-          }
         }
+        // Always enforce size limit, only log warnings if tracking
+        checkSizeThresholds(totalBytes, trackSize);
       } catch (error) {
+        // Re-throw size limit errors to exit immediately
+        if (error.message.includes("limit")) {
+          throw error;
+        }
         console.error(
           `❌ Error processing "${fileArg}" in section "${section.header || "(no header)"}": ${error.message}`
         );
@@ -1158,7 +1167,7 @@ function processConfigFile(config, args) {
     const fileCount = `${totalFilesProcessed} ${totalFilesProcessed === 1 ? "file" : "files"}`;
     const sectionCount = `${config.sections.length} ${config.sections.length === 1 ? "section" : "sections"}`;
     console.error(
-      `${status}: ${fileCount}, ${sectionCount} to ${outputFile} (${formatSize(totalBytes)} / 125 KB)`
+      `${status}: ${fileCount}, ${sectionCount} to ${outputFile} (${formatSize(totalBytes)} / ${formatSize(MAX_SIZE_BYTES)})`
     );
   }
 
