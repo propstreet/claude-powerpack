@@ -14,7 +14,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { parseArgs } from "util";
-import { execSync } from "child_process";
+import { execFileSync } from "child_process";
 
 // ============================================================================
 // Constants
@@ -28,6 +28,18 @@ const WARNING_THRESHOLD_1 = 100 * 1024;
 
 /** Warning threshold at 115 KB (very close to limit) */
 const WARNING_THRESHOLD_2 = 115 * 1024;
+
+// ============================================================================
+// Custom Errors
+// ============================================================================
+
+/** Error thrown when output exceeds the size limit */
+class SizeLimitError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "SizeLimitError";
+  }
+}
 
 /** Regex pattern for parsing file arguments with ranges/diffs */
 const FILE_ARG_PATTERN = /^(.+?):([\d,:-]+|diff(?:=.+)?)$/;
@@ -43,6 +55,25 @@ const FILE_ARG_PATTERN = /^(.+?):([\d,:-]+|diff(?:=.+)?)$/;
  */
 function formatSize(bytes) {
   return (bytes / 1024).toFixed(1) + " KB";
+}
+
+/**
+ * Check size thresholds and throw if limit exceeded
+ * @param {number} totalBytes - Current total size in bytes
+ * @param {boolean} logWarnings - Whether to log warning messages
+ * @throws {SizeLimitError} If size exceeds MAX_SIZE_BYTES
+ */
+function checkSizeThresholds(totalBytes, logWarnings = true) {
+  if (totalBytes >= MAX_SIZE_BYTES) {
+    throw new SizeLimitError(
+      `Exceeded ${formatSize(MAX_SIZE_BYTES)} limit (${formatSize(totalBytes)}). ` +
+      `Stop processing to stay within expert consultation limits.`
+    );
+  } else if (logWarnings && totalBytes >= WARNING_THRESHOLD_2) {
+    console.error(`⚠️  Very close to ${formatSize(MAX_SIZE_BYTES)} limit!`);
+  } else if (logWarnings && totalBytes >= WARNING_THRESHOLD_1) {
+    console.error(`⚠️  Approaching ${formatSize(WARNING_THRESHOLD_1)}`);
+  }
 }
 
 /**
@@ -116,10 +147,73 @@ function parseFileArgument(fileArg) {
  */
 function validateGitRepository() {
   try {
-    execSync("git rev-parse --git-dir", { stdio: "pipe" });
+    execFileSync("git", ["rev-parse", "--git-dir"], { stdio: "pipe" });
   } catch {
     throw new Error("Not in a git repository");
   }
+}
+
+/**
+ * Get staged changes (git diff --cached)
+ * @returns {string} Unified diff output of staged changes, or placeholder if none
+ * @throws {Error} If not in a git repository
+ */
+function getStagedDiff() {
+  validateGitRepository();
+  const gitRoot = execFileSync("git", ["rev-parse", "--show-toplevel"], {
+    encoding: "utf8",
+  }).trim();
+
+  // No colors, no external diff tools for stable markdown output
+  const diff = execFileSync(
+    "git",
+    ["-c", "color.ui=false", "diff", "--cached", "--no-ext-diff"],
+    {
+      encoding: "utf8",
+      cwd: gitRoot,
+    }
+  );
+
+  if (!diff || diff.trim() === "") {
+    return "(No staged changes)";
+  }
+
+  return diff;
+}
+
+/**
+ * Get commit changes (git show <commit>)
+ * @param {string} commitRef - Commit reference (SHA, HEAD, etc.)
+ * @returns {string} Unified diff output of the commit
+ * @throws {Error} If commit doesn't exist or is not a valid commit
+ */
+function getCommitDiff(commitRef) {
+  validateGitRepository();
+
+  // Validate it's specifically a commit (not just any rev)
+  try {
+    execFileSync("git", ["cat-file", "-e", `${commitRef}^{commit}`], {
+      stdio: "pipe",
+    });
+  } catch {
+    throw new Error(`Invalid commit reference: ${commitRef}`);
+  }
+
+  const gitRoot = execFileSync("git", ["rev-parse", "--show-toplevel"], {
+    encoding: "utf8",
+  }).trim();
+
+  // Get commit message and diff (no colors, no external diff tools)
+  const output = execFileSync(
+    "git",
+    ["-c", "color.ui=false", "show", "--stat", "--patch", "--no-ext-diff", commitRef],
+    {
+      encoding: "utf8",
+      cwd: gitRoot,
+    }
+  );
+
+  return output;
 }
 
 /**
@@ -141,7 +235,7 @@ function splitGitRefs(diffRange) {
 function validateGitRefs(refs) {
   for (const ref of refs) {
     try {
-      execSync(`git rev-parse --verify ${ref}`, { stdio: "pipe" });
+      execFileSync("git", ["rev-parse", "--verify", ref], { stdio: "pipe" });
     } catch {
       throw new Error(`Invalid git reference: ${ref}`);
     }
@@ -186,17 +280,29 @@ function readDiffContent(filePath, diffRange) {
     validateGitRefs(refs);
 
     // Get relative path from git root for git diff
-    const gitRoot = execSync("git rev-parse --show-toplevel", {
+    const gitRoot = execFileSync("git", ["rev-parse", "--show-toplevel"], {
       encoding: "utf8",
     }).trim();
-    const relativePath = path.relative(gitRoot, filePath);
+    // Normalize to POSIX separators for git on Windows
+    const relativePath = path.relative(gitRoot, filePath).split(path.sep).join("/");
 
-    // Execute git diff
-    const diffCommand = diffRange.includes("..")
-      ? `git diff ${diffRange} -- "${relativePath}"`
-      : `git diff ${diffRange} -- "${relativePath}"`;
+    // Validate file is within the repository
+    if (relativePath === ".." || relativePath.startsWith("../") || path.isAbsolute(relativePath)) {
+      throw new Error(
+        `File is outside the git repository: ${filePath}\n` +
+        `  Repository root: ${gitRoot}`
+      );
+    }
 
-    return execSync(diffCommand, {
+    // Build args conditionally (diffRange may be undefined)
+    const args = ["-c", "color.ui=false", "diff", "--no-ext-diff"];
+    if (diffRange) {
+      args.push(diffRange);
+    }
+    args.push("--", relativePath);
+
+    // Execute git diff (no colors, no external diff tools)
+    return execFileSync("git", args, {
       encoding: "utf8",
       cwd: gitRoot,
     });
@@ -578,6 +684,9 @@ Options:
                        Can be used multiple times for different files
   --config <file>      Use JSON config file for batch extraction
                        See example-config.json for format
+  --staged             Include all staged changes (git diff --cached)
+  --commit <ref>       Include a commit's changes (git show <ref>)
+                       Can be used multiple times for multiple commits
 
 Output:
   Prints markdown-formatted code blocks with file paths and line ranges.
@@ -641,6 +750,21 @@ Examples:
   extract-code --config=extraction-plan.json
   extract-code --config=extraction-plan.json --track-size  # Override trackSize
 
+  # Include all staged changes
+  extract-code --staged --track-size --output=consultation.md
+
+  # Include a specific commit's changes
+  extract-code --commit=abc123 --track-size --output=consultation.md
+  extract-code --commit=HEAD~1 --track-size --output=consultation.md
+
+  # Include multiple commits
+  extract-code --commit=abc123 --commit=def456 --output=consultation.md
+
+  # Combine staged changes with file extraction
+  extract-code --staged --track-size --output=doc.md \\
+               --section="Context Files" \\
+               src/Service.cs src/Model.cs
+
 Notes:
   • Automatically detects language from file extension
   • Line numbers are 1-indexed (first line is line 1)
@@ -679,6 +803,13 @@ function main() {
     config: {
       type: "string",
     },
+    staged: {
+      type: "boolean",
+    },
+    commit: {
+      type: "string",
+      multiple: true,
+    },
   };
 
   let args;
@@ -709,38 +840,88 @@ function main() {
     }
   }
 
-  if (!args.positionals || args.positionals.length === 0) {
+  // Filter out empty arguments
+  const fileArgs = (args.positionals || []).filter((arg) => arg && arg.trim() !== "");
+  // Normalize commits to array (parseArgs may return string or array)
+  const rawCommits = args.commit || [];
+  const commits = (Array.isArray(rawCommits) ? rawCommits : [rawCommits])
+    .filter((ref) => ref && ref.trim() !== "");
+
+  // Files are optional if using --staged or --commit
+  const hasGitOptions = args.staged || commits.length > 0;
+
+  if (fileArgs.length === 0 && !hasGitOptions) {
     console.error("❌ No files specified");
     showHelp();
     process.exit(1);
   }
 
-  // Filter out empty arguments
-  const fileArgs = args.positionals.filter((arg) => arg && arg.trim() !== "");
-
-  // VALIDATE ALL FILES FIRST - before writing anything
+  // VALIDATE ALL FILES FIRST - before writing anything (skip if no files)
   const validationErrors = [];
-  for (const fileArg of fileArgs) {
-    const validation = validateFile(fileArg);
-    if (!validation.valid) {
-      validationErrors.push({
-        fileArg: validation.fileArg,
-        error: validation.error,
-      });
+  if (fileArgs.length > 0) {
+    for (const fileArg of fileArgs) {
+      const validation = validateFile(fileArg);
+      if (!validation.valid) {
+        validationErrors.push({
+          fileArg: validation.fileArg,
+          error: validation.error,
+        });
+      }
+    }
+  }
+
+  // Validate git options (--staged and/or --commit)
+  let gitRepoValid = false;
+  if (hasGitOptions) {
+    // First validate git repository
+    try {
+      validateGitRepository();
+      gitRepoValid = true;
+    } catch (error) {
+      // Push separate error for each flag that requires git
+      if (args.staged) {
+        validationErrors.push({
+          fileArg: "--staged",
+          error: error.message,
+        });
+      }
+      for (const commitRef of commits) {
+        validationErrors.push({
+          fileArg: `--commit=${commitRef}`,
+          error: error.message,
+        });
+      }
+    }
+
+    // Then validate each commit reference (only if repo is valid)
+    if (gitRepoValid) {
+      for (const commitRef of commits) {
+        try {
+          // Validate it's specifically a commit (not just any rev)
+          execFileSync("git", ["cat-file", "-e", `${commitRef}^{commit}`], {
+            stdio: "pipe",
+          });
+        } catch {
+          validationErrors.push({
+            fileArg: `--commit=${commitRef}`,
+            error: `Invalid commit reference: ${commitRef}`,
+          });
+        }
+      }
     }
   }
 
   // If any validation errors, report them all and exit without modifying output
   if (validationErrors.length > 0) {
     console.error(
-      `❌ Validation failed for ${validationErrors.length} file(s):\n`
+      `❌ Validation failed for ${validationErrors.length} item(s):\n`
     );
     for (const { fileArg, error } of validationErrors) {
       console.error(`  • "${fileArg}":`);
       console.error(`    ${error.replace(/\n/g, "\n    ")}`);
       console.error("");
     }
-    console.error("⚠️  No files were written to avoid partial output.");
+    console.error("⚠️  No output was written to avoid partial results.");
     process.exit(1);
   }
 
@@ -755,6 +936,71 @@ function main() {
     totalBytes = stats.size;
     if (args["track-size"]) {
       console.error(`📄 ${args.output}: ${formatSize(totalBytes)} (existing)`);
+    }
+  }
+
+  // Process --staged option (git diff --cached)
+  if (args.staged) {
+    try {
+      const stagedDiff = getStagedDiff();
+      const output = `### Staged Changes (git diff --cached)\n\n\`\`\`diff\n${stagedDiff}\n\`\`\``;
+      const contentSize = Buffer.byteLength(output + "\n\n", "utf8");
+      totalBytes += contentSize;
+
+      if (args.output) {
+        fs.appendFileSync(args.output, output + "\n\n", "utf8");
+      }
+      results.push(output);
+
+      if (args["track-size"]) {
+        const percent = ((totalBytes / MAX_SIZE_BYTES) * 100).toFixed(1);
+        console.error(
+          `[staged] git diff --cached → +${formatSize(contentSize)} (${formatSize(totalBytes)} / ${formatSize(MAX_SIZE_BYTES)}, ${percent}%)`
+        );
+      }
+      // Always enforce size limit, only log warnings if tracking
+      checkSizeThresholds(totalBytes, args["track-size"]);
+    } catch (error) {
+      // Re-throw size limit errors to exit immediately
+      if (error instanceof SizeLimitError) {
+        throw error;
+      }
+      console.error(`❌ Error getting staged changes: ${error.message}`);
+      hasErrors = true;
+    }
+  }
+
+  // Process --commit options (git show <commit>)
+  if (commits.length > 0) {
+    for (const commitRef of commits) {
+      try {
+        const commitDiff = getCommitDiff(commitRef);
+        // Use ```text since git show includes commit headers and stats, not just diff
+        const output = `### Commit: ${commitRef}\n\n\`\`\`text\n${commitDiff}\n\`\`\``;
+        const contentSize = Buffer.byteLength(output + "\n\n", "utf8");
+        totalBytes += contentSize;
+
+        if (args.output) {
+          fs.appendFileSync(args.output, output + "\n\n", "utf8");
+        }
+        results.push(output);
+
+        if (args["track-size"]) {
+          const percent = ((totalBytes / MAX_SIZE_BYTES) * 100).toFixed(1);
+          console.error(
+            `[commit] ${commitRef} → +${formatSize(contentSize)} (${formatSize(totalBytes)} / ${formatSize(MAX_SIZE_BYTES)}, ${percent}%)`
+          );
+        }
+        // Always enforce size limit, only log warnings if tracking
+        checkSizeThresholds(totalBytes, args["track-size"]);
+      } catch (error) {
+        // Re-throw size limit errors to exit immediately
+        if (error instanceof SizeLimitError) {
+          throw error;
+        }
+        console.error(`❌ Error getting commit ${commitRef}: ${error.message}`);
+        hasErrors = true;
+      }
     }
   }
 
@@ -789,32 +1035,23 @@ function main() {
         const percent = ((totalBytes / MAX_SIZE_BYTES) * 100).toFixed(1);
         const filename = path.basename(fileArg.split(":")[0]);
         console.error(
-          `[${index + 1}/${fileArgs.length}] ${filename} → +${formatSize(contentSize)} (${formatSize(totalBytes)} / 125 KB, ${percent}%)`
+          `[${index + 1}/${fileArgs.length}] ${filename} → +${formatSize(contentSize)} (${formatSize(totalBytes)} / ${formatSize(MAX_SIZE_BYTES)}, ${percent}%)`
         );
-
-        // Check thresholds
-        if (totalBytes >= MAX_SIZE_BYTES) {
-          console.error(
-            `❌ Error: Exceeded 125 KB limit (${formatSize(totalBytes)})`
-          );
-          console.error(
-            `   Stop processing to stay within expert consultation limits`
-          );
-          process.exit(1);
-        } else if (totalBytes >= WARNING_THRESHOLD_2) {
-          console.error(`⚠️  Very close to 125 KB limit!`);
-        } else if (totalBytes >= WARNING_THRESHOLD_1) {
-          console.error(`⚠️  Approaching 100 KB`);
-        }
       }
+      // Always enforce size limit, only log warnings if tracking
+      checkSizeThresholds(totalBytes, args["track-size"]);
     } catch (error) {
+      // Re-throw size limit errors to exit immediately
+      if (error instanceof SizeLimitError) {
+        throw error;
+      }
       console.error(`❌ Error processing "${fileArg}": ${error.message}`);
       hasErrors = true;
     }
   }
 
   if (results.length === 0) {
-    console.error("\n❌ No files were successfully processed");
+    console.error("\n❌ No content was successfully extracted");
     process.exit(1);
   }
 
@@ -823,9 +1060,9 @@ function main() {
     console.log(results.join("\n\n"));
   } else if (args["track-size"]) {
     const status = hasErrors ? "⚠️  Completed with errors" : "✅ Saved";
-    const fileCount = `${results.length} ${results.length === 1 ? "file" : "files"}`;
+    const itemCount = `${results.length} ${results.length === 1 ? "item" : "items"}`;
     console.error(
-      `${status}: ${fileCount} to ${args.output} (${formatSize(totalBytes)} / 125 KB)`
+      `${status}: ${itemCount} to ${args.output} (${formatSize(totalBytes)} / ${formatSize(MAX_SIZE_BYTES)})`
     );
   }
 
@@ -923,25 +1160,16 @@ function processConfigFile(config, args) {
           const percent = ((totalBytes / MAX_SIZE_BYTES) * 100).toFixed(1);
           const filename = path.basename(fileArg.split(":")[0]);
           console.error(
-            `  [${fileIndex + 1}/${section.files.length}] ${filename} → +${formatSize(contentSize)} (${formatSize(totalBytes)} / 125 KB, ${percent}%)`
+            `  [${fileIndex + 1}/${section.files.length}] ${filename} → +${formatSize(contentSize)} (${formatSize(totalBytes)} / ${formatSize(MAX_SIZE_BYTES)}, ${percent}%)`
           );
-
-          // Check thresholds
-          if (totalBytes >= MAX_SIZE_BYTES) {
-            console.error(
-              `❌ Error: Exceeded 125 KB limit (${formatSize(totalBytes)})`
-            );
-            console.error(
-              `   Stop processing to stay within expert consultation limits`
-            );
-            process.exit(1);
-          } else if (totalBytes >= WARNING_THRESHOLD_2) {
-            console.error(`⚠️  Very close to 125 KB limit!`);
-          } else if (totalBytes >= WARNING_THRESHOLD_1) {
-            console.error(`⚠️  Approaching 100 KB`);
-          }
         }
+        // Always enforce size limit, only log warnings if tracking
+        checkSizeThresholds(totalBytes, trackSize);
       } catch (error) {
+        // Re-throw size limit errors to exit immediately
+        if (error instanceof SizeLimitError) {
+          throw error;
+        }
         console.error(
           `❌ Error processing "${fileArg}" in section "${section.header || "(no header)"}": ${error.message}`
         );
@@ -955,7 +1183,7 @@ function processConfigFile(config, args) {
     const fileCount = `${totalFilesProcessed} ${totalFilesProcessed === 1 ? "file" : "files"}`;
     const sectionCount = `${config.sections.length} ${config.sections.length === 1 ? "section" : "sections"}`;
     console.error(
-      `${status}: ${fileCount}, ${sectionCount} to ${outputFile} (${formatSize(totalBytes)} / 125 KB)`
+      `${status}: ${fileCount}, ${sectionCount} to ${outputFile} (${formatSize(totalBytes)} / ${formatSize(MAX_SIZE_BYTES)})`
     );
   }
 

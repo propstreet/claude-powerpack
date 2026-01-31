@@ -202,6 +202,22 @@ The plugin uses semantic versioning. **When bumping versions, update ALL of thes
 | `README.md` | Version badge URL |
 | `CHANGELOG.md` | New `## [x.y.z]` section + footer link |
 
+### Git Workflow
+
+**Never amend pushed commits.** Once a commit is pushed to a remote branch:
+- Create a new commit for fixes instead of amending
+- Amending requires force push, which rewrites public history
+- Force push can cause issues for collaborators and breaks PR review flow
+
+**When amend is acceptable:**
+- Local commits not yet pushed
+- Explicitly requested by the user
+
+**Prefer separate commits for:**
+- Security fixes (creates audit trail)
+- Review feedback (shows the review process)
+- Distinct logical changes
+
 ### Creating a Release
 
 After merging version bump to main:
