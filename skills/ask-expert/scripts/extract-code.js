@@ -14,7 +14,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { parseArgs } from "util";
-import { execSync } from "child_process";
+import { execSync, execFileSync } from "child_process";
 
 // ============================================================================
 // Constants
@@ -124,19 +124,24 @@ function validateGitRepository() {
 
 /**
  * Get staged changes (git diff --cached)
- * @returns {string} Unified diff output of staged changes
- * @throws {Error} If not in a git repository or no staged changes
+ * @returns {string} Unified diff output of staged changes, or placeholder if none
+ * @throws {Error} If not in a git repository
  */
 function getStagedDiff() {
   validateGitRepository();
-  const gitRoot = execSync("git rev-parse --show-toplevel", {
+  const gitRoot = execFileSync("git", ["rev-parse", "--show-toplevel"], {
     encoding: "utf8",
   }).trim();
 
-  const diff = execSync("git diff --cached", {
-    encoding: "utf8",
-    cwd: gitRoot,
-  });
+  // No colors, no external diff tools for stable markdown output
+  const diff = execFileSync(
+    "git",
+    ["-c", "color.ui=false", "diff", "--cached", "--no-ext-diff"],
+    {
+      encoding: "utf8",
+      cwd: gitRoot,
+    }
+  );
 
   if (!diff || diff.trim() === "") {
     return "(No staged changes)";
@@ -149,27 +154,33 @@ function getStagedDiff() {
  * Get commit changes (git show <commit>)
  * @param {string} commitRef - Commit reference (SHA, HEAD, etc.)
  * @returns {string} Unified diff output of the commit
- * @throws {Error} If commit doesn't exist
+ * @throws {Error} If commit doesn't exist or is not a valid commit
  */
 function getCommitDiff(commitRef) {
   validateGitRepository();
 
-  // Validate commit exists
+  // Validate it's specifically a commit (not just any rev)
   try {
-    execSync(`git rev-parse --verify ${commitRef}`, { stdio: "pipe" });
+    execFileSync("git", ["cat-file", "-e", `${commitRef}^{commit}`], {
+      stdio: "pipe",
+    });
   } catch {
     throw new Error(`Invalid commit reference: ${commitRef}`);
   }
 
-  const gitRoot = execSync("git rev-parse --show-toplevel", {
+  const gitRoot = execFileSync("git", ["rev-parse", "--show-toplevel"], {
     encoding: "utf8",
   }).trim();
 
-  // Get commit message and diff
-  const output = execSync(`git show --stat --patch ${commitRef}`, {
-    encoding: "utf8",
-    cwd: gitRoot,
-  });
+  // Get commit message and diff (no colors, no external diff tools)
+  const output = execFileSync(
+    "git",
+    ["-c", "color.ui=false", "show", "--stat", "--patch", "--no-ext-diff", commitRef],
+    {
+      encoding: "utf8",
+      cwd: gitRoot,
+    }
+  );
 
   return output;
 }
@@ -193,7 +204,7 @@ function splitGitRefs(diffRange) {
 function validateGitRefs(refs) {
   for (const ref of refs) {
     try {
-      execSync(`git rev-parse --verify ${ref}`, { stdio: "pipe" });
+      execFileSync("git", ["rev-parse", "--verify", ref], { stdio: "pipe" });
     } catch {
       throw new Error(`Invalid git reference: ${ref}`);
     }
@@ -238,20 +249,20 @@ function readDiffContent(filePath, diffRange) {
     validateGitRefs(refs);
 
     // Get relative path from git root for git diff
-    const gitRoot = execSync("git rev-parse --show-toplevel", {
+    const gitRoot = execFileSync("git", ["rev-parse", "--show-toplevel"], {
       encoding: "utf8",
     }).trim();
     const relativePath = path.relative(gitRoot, filePath);
 
-    // Execute git diff
-    const diffCommand = diffRange.includes("..")
-      ? `git diff ${diffRange} -- "${relativePath}"`
-      : `git diff ${diffRange} -- "${relativePath}"`;
-
-    return execSync(diffCommand, {
-      encoding: "utf8",
-      cwd: gitRoot,
-    });
+    // Execute git diff (no colors, no external diff tools)
+    return execFileSync(
+      "git",
+      ["-c", "color.ui=false", "diff", "--no-ext-diff", diffRange, "--", relativePath],
+      {
+        encoding: "utf8",
+        cwd: gitRoot,
+      }
+    );
   } catch (error) {
     // Re-throw with context
     if (
@@ -786,17 +797,18 @@ function main() {
     }
   }
 
-  // Files are optional if using --staged or --commit
-  const hasGitOptions = args.staged || (args.commit && args.commit.length > 0);
+  // Filter out empty arguments
+  const fileArgs = (args.positionals || []).filter((arg) => arg && arg.trim() !== "");
+  const commits = (args.commit || []).filter((ref) => ref && ref.trim() !== "");
 
-  if ((!args.positionals || args.positionals.length === 0) && !hasGitOptions) {
+  // Files are optional if using --staged or --commit
+  const hasGitOptions = args.staged || commits.length > 0;
+
+  if (fileArgs.length === 0 && !hasGitOptions) {
     console.error("❌ No files specified");
     showHelp();
     process.exit(1);
   }
-
-  // Filter out empty arguments
-  const fileArgs = (args.positionals || []).filter((arg) => arg && arg.trim() !== "");
 
   // VALIDATE ALL FILES FIRST - before writing anything (skip if no files)
   const validationErrors = [];
@@ -858,6 +870,21 @@ function main() {
         console.error(
           `[staged] git diff --cached → +${formatSize(contentSize)} (${formatSize(totalBytes)} / 125 KB, ${percent}%)`
         );
+
+        // Check thresholds
+        if (totalBytes >= MAX_SIZE_BYTES) {
+          console.error(
+            `❌ Error: Exceeded 125 KB limit (${formatSize(totalBytes)})`
+          );
+          console.error(
+            `   Stop processing to stay within expert consultation limits`
+          );
+          process.exit(1);
+        } else if (totalBytes >= WARNING_THRESHOLD_2) {
+          console.error(`⚠️  Very close to 125 KB limit!`);
+        } else if (totalBytes >= WARNING_THRESHOLD_1) {
+          console.error(`⚠️  Approaching 100 KB`);
+        }
       }
     } catch (error) {
       console.error(`❌ Error getting staged changes: ${error.message}`);
@@ -866,11 +893,12 @@ function main() {
   }
 
   // Process --commit options (git show <commit>)
-  if (args.commit && args.commit.length > 0) {
-    for (const commitRef of args.commit) {
+  if (commits.length > 0) {
+    for (const commitRef of commits) {
       try {
         const commitDiff = getCommitDiff(commitRef);
-        const output = `### Commit: ${commitRef}\n\n\`\`\`diff\n${commitDiff}\n\`\`\``;
+        // Use ```text since git show includes commit headers and stats, not just diff
+        const output = `### Commit: ${commitRef}\n\n\`\`\`text\n${commitDiff}\n\`\`\``;
         const contentSize = Buffer.byteLength(output + "\n\n", "utf8");
         totalBytes += contentSize;
 
@@ -884,6 +912,21 @@ function main() {
           console.error(
             `[commit] ${commitRef} → +${formatSize(contentSize)} (${formatSize(totalBytes)} / 125 KB, ${percent}%)`
           );
+
+          // Check thresholds
+          if (totalBytes >= MAX_SIZE_BYTES) {
+            console.error(
+              `❌ Error: Exceeded 125 KB limit (${formatSize(totalBytes)})`
+            );
+            console.error(
+              `   Stop processing to stay within expert consultation limits`
+            );
+            process.exit(1);
+          } else if (totalBytes >= WARNING_THRESHOLD_2) {
+            console.error(`⚠️  Very close to 125 KB limit!`);
+          } else if (totalBytes >= WARNING_THRESHOLD_1) {
+            console.error(`⚠️  Approaching 100 KB`);
+          }
         }
       } catch (error) {
         console.error(`❌ Error getting commit ${commitRef}: ${error.message}`);
