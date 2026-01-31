@@ -86,7 +86,11 @@ node scripts/extract-code.js \
 **File format options:**
 - Full file: `src/Service.cs`
 - Line ranges: `src/Service.cs:100-200` or `src/Service.cs:1-30,100-150`
-- Git diff: `src/Service.cs:diff` or `src/Service.cs:diff=master..HEAD`
+- Git diff (per-file): `src/Service.cs:diff` or `src/Service.cs:diff=master..HEAD`
+
+**Git diff options (all changes):**
+- Staged changes: `--staged` (equivalent to `git diff --cached`)
+- Commit changes: `--commit=abc123` or `--commit=HEAD~1` (equivalent to `git show`)
 
 **Prefer FULL files over chunks** for better expert analysis. Use chunks only for very large files.
 
@@ -144,6 +148,22 @@ node scripts/extract-code.js \
 ```bash
 node scripts/extract-code.js \
   --config=extraction-plan.json
+```
+
+**Include staged or commit changes:**
+```bash
+# All staged changes
+node scripts/extract-code.js \
+  --staged --track-size --output=doc.md
+
+# A specific commit
+node scripts/extract-code.js \
+  --commit=abc123 --track-size --output=doc.md
+
+# Combine with file extraction
+node scripts/extract-code.js \
+  --staged --track-size --output=doc.md \
+  --section="Context" src/Service.cs
 ```
 
 ## Config File Format

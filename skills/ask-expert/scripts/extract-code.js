@@ -123,6 +123,58 @@ function validateGitRepository() {
 }
 
 /**
+ * Get staged changes (git diff --cached)
+ * @returns {string} Unified diff output of staged changes
+ * @throws {Error} If not in a git repository or no staged changes
+ */
+function getStagedDiff() {
+  validateGitRepository();
+  const gitRoot = execSync("git rev-parse --show-toplevel", {
+    encoding: "utf8",
+  }).trim();
+
+  const diff = execSync("git diff --cached", {
+    encoding: "utf8",
+    cwd: gitRoot,
+  });
+
+  if (!diff || diff.trim() === "") {
+    return "(No staged changes)";
+  }
+
+  return diff;
+}
+
+/**
+ * Get commit changes (git show <commit>)
+ * @param {string} commitRef - Commit reference (SHA, HEAD, etc.)
+ * @returns {string} Unified diff output of the commit
+ * @throws {Error} If commit doesn't exist
+ */
+function getCommitDiff(commitRef) {
+  validateGitRepository();
+
+  // Validate commit exists
+  try {
+    execSync(`git rev-parse --verify ${commitRef}`, { stdio: "pipe" });
+  } catch {
+    throw new Error(`Invalid commit reference: ${commitRef}`);
+  }
+
+  const gitRoot = execSync("git rev-parse --show-toplevel", {
+    encoding: "utf8",
+  }).trim();
+
+  // Get commit message and diff
+  const output = execSync(`git show --stat --patch ${commitRef}`, {
+    encoding: "utf8",
+    cwd: gitRoot,
+  });
+
+  return output;
+}
+
+/**
  * Split git diff range into individual refs for validation
  * @param {string} diffRange - Git range (e.g., "master", "master..HEAD", "HEAD~3")
  * @returns {string[]} Array of git refs to validate
@@ -578,6 +630,9 @@ Options:
                        Can be used multiple times for different files
   --config <file>      Use JSON config file for batch extraction
                        See example-config.json for format
+  --staged             Include all staged changes (git diff --cached)
+  --commit <ref>       Include a commit's changes (git show <ref>)
+                       Can be used multiple times for multiple commits
 
 Output:
   Prints markdown-formatted code blocks with file paths and line ranges.
@@ -641,6 +696,21 @@ Examples:
   extract-code --config=extraction-plan.json
   extract-code --config=extraction-plan.json --track-size  # Override trackSize
 
+  # Include all staged changes
+  extract-code --staged --track-size --output=consultation.md
+
+  # Include a specific commit's changes
+  extract-code --commit=abc123 --track-size --output=consultation.md
+  extract-code --commit=HEAD~1 --track-size --output=consultation.md
+
+  # Include multiple commits
+  extract-code --commit=abc123 --commit=def456 --output=consultation.md
+
+  # Combine staged changes with file extraction
+  extract-code --staged --track-size --output=doc.md \\
+               --section="Context Files" \\
+               src/Service.cs src/Model.cs
+
 Notes:
   • Automatically detects language from file extension
   • Line numbers are 1-indexed (first line is line 1)
@@ -679,6 +749,13 @@ function main() {
     config: {
       type: "string",
     },
+    staged: {
+      type: "boolean",
+    },
+    commit: {
+      type: "string",
+      multiple: true,
+    },
   };
 
   let args;
@@ -709,24 +786,29 @@ function main() {
     }
   }
 
-  if (!args.positionals || args.positionals.length === 0) {
+  // Files are optional if using --staged or --commit
+  const hasGitOptions = args.staged || (args.commit && args.commit.length > 0);
+
+  if ((!args.positionals || args.positionals.length === 0) && !hasGitOptions) {
     console.error("❌ No files specified");
     showHelp();
     process.exit(1);
   }
 
   // Filter out empty arguments
-  const fileArgs = args.positionals.filter((arg) => arg && arg.trim() !== "");
+  const fileArgs = (args.positionals || []).filter((arg) => arg && arg.trim() !== "");
 
-  // VALIDATE ALL FILES FIRST - before writing anything
+  // VALIDATE ALL FILES FIRST - before writing anything (skip if no files)
   const validationErrors = [];
-  for (const fileArg of fileArgs) {
-    const validation = validateFile(fileArg);
-    if (!validation.valid) {
-      validationErrors.push({
-        fileArg: validation.fileArg,
-        error: validation.error,
-      });
+  if (fileArgs.length > 0) {
+    for (const fileArg of fileArgs) {
+      const validation = validateFile(fileArg);
+      if (!validation.valid) {
+        validationErrors.push({
+          fileArg: validation.fileArg,
+          error: validation.error,
+        });
+      }
     }
   }
 
@@ -755,6 +837,58 @@ function main() {
     totalBytes = stats.size;
     if (args["track-size"]) {
       console.error(`📄 ${args.output}: ${formatSize(totalBytes)} (existing)`);
+    }
+  }
+
+  // Process --staged option (git diff --cached)
+  if (args.staged) {
+    try {
+      const stagedDiff = getStagedDiff();
+      const output = `### Staged Changes (git diff --cached)\n\n\`\`\`diff\n${stagedDiff}\n\`\`\``;
+      const contentSize = Buffer.byteLength(output + "\n\n", "utf8");
+      totalBytes += contentSize;
+
+      if (args.output) {
+        fs.appendFileSync(args.output, output + "\n\n", "utf8");
+      }
+      results.push(output);
+
+      if (args["track-size"]) {
+        const percent = ((totalBytes / MAX_SIZE_BYTES) * 100).toFixed(1);
+        console.error(
+          `[staged] git diff --cached → +${formatSize(contentSize)} (${formatSize(totalBytes)} / 125 KB, ${percent}%)`
+        );
+      }
+    } catch (error) {
+      console.error(`❌ Error getting staged changes: ${error.message}`);
+      hasErrors = true;
+    }
+  }
+
+  // Process --commit options (git show <commit>)
+  if (args.commit && args.commit.length > 0) {
+    for (const commitRef of args.commit) {
+      try {
+        const commitDiff = getCommitDiff(commitRef);
+        const output = `### Commit: ${commitRef}\n\n\`\`\`diff\n${commitDiff}\n\`\`\``;
+        const contentSize = Buffer.byteLength(output + "\n\n", "utf8");
+        totalBytes += contentSize;
+
+        if (args.output) {
+          fs.appendFileSync(args.output, output + "\n\n", "utf8");
+        }
+        results.push(output);
+
+        if (args["track-size"]) {
+          const percent = ((totalBytes / MAX_SIZE_BYTES) * 100).toFixed(1);
+          console.error(
+            `[commit] ${commitRef} → +${formatSize(contentSize)} (${formatSize(totalBytes)} / 125 KB, ${percent}%)`
+          );
+        }
+      } catch (error) {
+        console.error(`❌ Error getting commit ${commitRef}: ${error.message}`);
+        hasErrors = true;
+      }
     }
   }
 
@@ -814,7 +948,7 @@ function main() {
   }
 
   if (results.length === 0) {
-    console.error("\n❌ No files were successfully processed");
+    console.error("\n❌ No content was successfully extracted");
     process.exit(1);
   }
 
@@ -823,9 +957,9 @@ function main() {
     console.log(results.join("\n\n"));
   } else if (args["track-size"]) {
     const status = hasErrors ? "⚠️  Completed with errors" : "✅ Saved";
-    const fileCount = `${results.length} ${results.length === 1 ? "file" : "files"}`;
+    const itemCount = `${results.length} ${results.length === 1 ? "item" : "items"}`;
     console.error(
-      `${status}: ${fileCount} to ${args.output} (${formatSize(totalBytes)} / 125 KB)`
+      `${status}: ${itemCount} to ${args.output} (${formatSize(totalBytes)} / 125 KB)`
     );
   }
 
