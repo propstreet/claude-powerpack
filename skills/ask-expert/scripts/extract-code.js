@@ -14,7 +14,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { parseArgs } from "util";
-import { execSync, execFileSync } from "child_process";
+import { execFileSync } from "child_process";
 
 // ============================================================================
 // Constants
@@ -43,6 +43,27 @@ const FILE_ARG_PATTERN = /^(.+?):([\d,:-]+|diff(?:=.+)?)$/;
  */
 function formatSize(bytes) {
   return (bytes / 1024).toFixed(1) + " KB";
+}
+
+/**
+ * Check size thresholds and exit if limit exceeded
+ * @param {number} totalBytes - Current total size in bytes
+ * @param {boolean} logWarnings - Whether to log warning messages
+ */
+function checkSizeThresholds(totalBytes, logWarnings = true) {
+  if (totalBytes >= MAX_SIZE_BYTES) {
+    console.error(
+      `❌ Error: Exceeded 125 KB limit (${formatSize(totalBytes)})`
+    );
+    console.error(
+      `   Stop processing to stay within expert consultation limits`
+    );
+    process.exit(1);
+  } else if (logWarnings && totalBytes >= WARNING_THRESHOLD_2) {
+    console.error(`⚠️  Very close to 125 KB limit!`);
+  } else if (logWarnings && totalBytes >= WARNING_THRESHOLD_1) {
+    console.error(`⚠️  Approaching 100 KB`);
+  }
 }
 
 /**
@@ -116,7 +137,7 @@ function parseFileArgument(fileArg) {
  */
 function validateGitRepository() {
   try {
-    execSync("git rev-parse --git-dir", { stdio: "pipe" });
+    execFileSync("git", ["rev-parse", "--git-dir"], { stdio: "pipe" });
   } catch {
     throw new Error("Not in a git repository");
   }
@@ -252,17 +273,21 @@ function readDiffContent(filePath, diffRange) {
     const gitRoot = execFileSync("git", ["rev-parse", "--show-toplevel"], {
       encoding: "utf8",
     }).trim();
-    const relativePath = path.relative(gitRoot, filePath);
+    // Normalize to POSIX separators for git on Windows
+    const relativePath = path.relative(gitRoot, filePath).split(path.sep).join("/");
+
+    // Build args conditionally (diffRange may be undefined)
+    const args = ["-c", "color.ui=false", "diff", "--no-ext-diff"];
+    if (diffRange) {
+      args.push(diffRange);
+    }
+    args.push("--", relativePath);
 
     // Execute git diff (no colors, no external diff tools)
-    return execFileSync(
-      "git",
-      ["-c", "color.ui=false", "diff", "--no-ext-diff", diffRange, "--", relativePath],
-      {
-        encoding: "utf8",
-        cwd: gitRoot,
-      }
-    );
+    return execFileSync("git", args, {
+      encoding: "utf8",
+      cwd: gitRoot,
+    });
   } catch (error) {
     // Re-throw with context
     if (
@@ -799,7 +824,10 @@ function main() {
 
   // Filter out empty arguments
   const fileArgs = (args.positionals || []).filter((arg) => arg && arg.trim() !== "");
-  const commits = (args.commit || []).filter((ref) => ref && ref.trim() !== "");
+  // Normalize commits to array (parseArgs may return string or array)
+  const rawCommits = args.commit || [];
+  const commits = (Array.isArray(rawCommits) ? rawCommits : [rawCommits])
+    .filter((ref) => ref && ref.trim() !== "");
 
   // Files are optional if using --staged or --commit
   const hasGitOptions = args.staged || commits.length > 0;
@@ -824,17 +852,54 @@ function main() {
     }
   }
 
+  // Validate --staged option (requires git repository)
+  if (args.staged) {
+    try {
+      validateGitRepository();
+    } catch (error) {
+      validationErrors.push({
+        fileArg: "--staged",
+        error: error.message,
+      });
+    }
+  }
+
+  // Validate --commit options (requires git repository and valid commit refs)
+  if (commits.length > 0) {
+    try {
+      validateGitRepository();
+      for (const commitRef of commits) {
+        try {
+          // Validate it's specifically a commit (not just any rev)
+          execFileSync("git", ["cat-file", "-e", `${commitRef}^{commit}`], {
+            stdio: "pipe",
+          });
+        } catch {
+          validationErrors.push({
+            fileArg: `--commit=${commitRef}`,
+            error: `Invalid commit reference: ${commitRef}`,
+          });
+        }
+      }
+    } catch (error) {
+      validationErrors.push({
+        fileArg: "--commit",
+        error: error.message,
+      });
+    }
+  }
+
   // If any validation errors, report them all and exit without modifying output
   if (validationErrors.length > 0) {
     console.error(
-      `❌ Validation failed for ${validationErrors.length} file(s):\n`
+      `❌ Validation failed for ${validationErrors.length} item(s):\n`
     );
     for (const { fileArg, error } of validationErrors) {
       console.error(`  • "${fileArg}":`);
       console.error(`    ${error.replace(/\n/g, "\n    ")}`);
       console.error("");
     }
-    console.error("⚠️  No files were written to avoid partial output.");
+    console.error("⚠️  No output was written to avoid partial results.");
     process.exit(1);
   }
 
@@ -870,22 +935,9 @@ function main() {
         console.error(
           `[staged] git diff --cached → +${formatSize(contentSize)} (${formatSize(totalBytes)} / 125 KB, ${percent}%)`
         );
-
-        // Check thresholds
-        if (totalBytes >= MAX_SIZE_BYTES) {
-          console.error(
-            `❌ Error: Exceeded 125 KB limit (${formatSize(totalBytes)})`
-          );
-          console.error(
-            `   Stop processing to stay within expert consultation limits`
-          );
-          process.exit(1);
-        } else if (totalBytes >= WARNING_THRESHOLD_2) {
-          console.error(`⚠️  Very close to 125 KB limit!`);
-        } else if (totalBytes >= WARNING_THRESHOLD_1) {
-          console.error(`⚠️  Approaching 100 KB`);
-        }
       }
+      // Always enforce size limit, only log warnings if tracking
+      checkSizeThresholds(totalBytes, args["track-size"]);
     } catch (error) {
       console.error(`❌ Error getting staged changes: ${error.message}`);
       hasErrors = true;
@@ -912,22 +964,9 @@ function main() {
           console.error(
             `[commit] ${commitRef} → +${formatSize(contentSize)} (${formatSize(totalBytes)} / 125 KB, ${percent}%)`
           );
-
-          // Check thresholds
-          if (totalBytes >= MAX_SIZE_BYTES) {
-            console.error(
-              `❌ Error: Exceeded 125 KB limit (${formatSize(totalBytes)})`
-            );
-            console.error(
-              `   Stop processing to stay within expert consultation limits`
-            );
-            process.exit(1);
-          } else if (totalBytes >= WARNING_THRESHOLD_2) {
-            console.error(`⚠️  Very close to 125 KB limit!`);
-          } else if (totalBytes >= WARNING_THRESHOLD_1) {
-            console.error(`⚠️  Approaching 100 KB`);
-          }
         }
+        // Always enforce size limit, only log warnings if tracking
+        checkSizeThresholds(totalBytes, args["track-size"]);
       } catch (error) {
         console.error(`❌ Error getting commit ${commitRef}: ${error.message}`);
         hasErrors = true;
@@ -968,22 +1007,9 @@ function main() {
         console.error(
           `[${index + 1}/${fileArgs.length}] ${filename} → +${formatSize(contentSize)} (${formatSize(totalBytes)} / 125 KB, ${percent}%)`
         );
-
-        // Check thresholds
-        if (totalBytes >= MAX_SIZE_BYTES) {
-          console.error(
-            `❌ Error: Exceeded 125 KB limit (${formatSize(totalBytes)})`
-          );
-          console.error(
-            `   Stop processing to stay within expert consultation limits`
-          );
-          process.exit(1);
-        } else if (totalBytes >= WARNING_THRESHOLD_2) {
-          console.error(`⚠️  Very close to 125 KB limit!`);
-        } else if (totalBytes >= WARNING_THRESHOLD_1) {
-          console.error(`⚠️  Approaching 100 KB`);
-        }
       }
+      // Always enforce size limit, only log warnings if tracking
+      checkSizeThresholds(totalBytes, args["track-size"]);
     } catch (error) {
       console.error(`❌ Error processing "${fileArg}": ${error.message}`);
       hasErrors = true;
