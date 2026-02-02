@@ -10,7 +10,7 @@ allowed-tools:
   # GitHub CLI: PR operations (edit is intentional - core skill purpose)
   - Bash(gh pr view:*)
   - Bash(gh pr edit:*)
-  - Bash(gh pr status)
+  - Bash(gh pr status:*)
   - Bash(gh pr diff:*)
   # Git: read-only operations
   - Bash(git log:*)

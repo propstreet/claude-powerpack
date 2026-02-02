@@ -2,6 +2,7 @@
 name: simplify
 description: Simplify a PR before merging - trim complexity that accumulated during development. Use when preparing to merge, cleaning up code, or reviewing for unnecessary complexity.
 user-invocable: true
+context: fork
 allowed-tools:
   # Git: read-only operations
   - Bash(git log:*)
@@ -26,7 +27,7 @@ allowed-tools:
   # .NET
   - Bash(dotnet build:*)
   - Bash(dotnet test:*)
-  - Bash(dotnet format:*)
+  - Bash(dotnet format --verify-no-changes:*)
   # File operations
   - Read
   - Edit

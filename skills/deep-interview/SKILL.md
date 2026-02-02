@@ -65,8 +65,8 @@ A structured interview process for gathering requirements and making design deci
    # Use Glob to find markdown files
    Glob: **/*.md
 
-   # Use Grep to search for keywords in those files
-   Grep: pattern="<keywords>" glob="*.md"
+   # Use Grep to search for keywords in markdown files
+   Grep: pattern="<keywords>" glob="**/*.md"
    ```
 
 3. **Explore current implementation:**
