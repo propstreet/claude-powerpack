@@ -13,7 +13,8 @@ allowed-tools:
   - Bash(git show:*)
   - Bash(git log:*)
   - Bash(git status)
-  # Utilities for size tracking
+  # Utilities for document creation and size tracking
+  - Bash(cat:*)
   - Bash(wc:*)
   - Bash(ls:*)
 user-invocable: true
