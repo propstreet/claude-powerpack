@@ -1,11 +1,29 @@
 # Claude Powerpack
 
-> Essential productivity tools for Claude Code: expert consultation docs, code extraction, and more
+> Essential productivity tools for Claude Code: expert consultation docs, code extraction, PR workflows, and more
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.3.0-green.svg)](https://github.com/propstreet/claude-powerpack/releases)
+[![Version](https://img.shields.io/badge/version-1.4.0-green.svg)](https://github.com/propstreet/claude-powerpack/releases)
 
 ## Features
+
+### Deep Interview Skill
+
+Structured requirements gathering via interactive interviews:
+
+- **7-Phase Process**: Context → Scope → Approach → Priority → Details → Technical → Timeline
+- **GitHub Integration**: Pulls issue context before asking questions
+- **PRD Generation**: Auto-generates PRD with decision log and implementation checklist
+- **Best Practices**: Multi-select questions, tradeoff presentation, stakeholder probing
+
+### Simplify Skill
+
+Pre-merge PR cleanup to trim accumulated complexity:
+
+- **Cruft Detection**: Debug logging, commented code, unused imports, TODOs for done work
+- **Over-Engineering Check**: Premature abstractions, dead code paths, speculative features
+- **Framework-Agnostic**: Auto-detects Node.js, Python, Go, Rust for verification
+- **Risk-Rated Output**: Change summary with Low/Medium/High risk assessment
 
 ### Update PR Skill
 
@@ -60,6 +78,14 @@ Check that the plugin is installed:
 You should see `claude-powerpack` in the list of installed plugins.
 
 ## Usage
+
+### Deep Interview Skill
+
+Ask Claude to interview you about a feature before implementation. Claude will research context, ask structured questions, and generate a PRD. See [Skills Included](#skills-included) for example prompts.
+
+### Simplify Skill
+
+Ask Claude to simplify your PR before merging. Claude will identify accumulated cruft, over-engineering, and suggest cleanups with risk ratings. See [Skills Included](#skills-included) for example prompts.
 
 ### Update PR Skill
 
@@ -128,6 +154,12 @@ Team members who trust the repository folder will automatically have the plugin 
 
 ## Documentation
 
+### Deep Interview Skill
+- **[SKILL.md](skills/deep-interview/SKILL.md)** - Complete interview workflow
+
+### Simplify Skill
+- **[SKILL.md](skills/simplify/SKILL.md)** - Complete cleanup workflow
+
 ### Update PR Skill
 - **[SKILL.md](skills/update-pr/SKILL.md)** - Complete workflow for Claude
 - **[EXAMPLES.md](skills/update-pr/EXAMPLES.md)** - Good vs bad PR examples
@@ -139,6 +171,42 @@ Team members who trust the repository folder will automatically have the plugin 
 - **[README](skills/ask-expert/README.md)** - Quick reference
 
 ## Skills Included
+
+### deep-interview (v1.4.0)
+
+**Example prompts:**
+```
+"Interview me about this feature before we start"
+"Let's do a deep interview for issue #531"
+"Help me gather requirements for the new authentication flow"
+"Start a structured interview for this PRD"
+```
+
+**What it does:**
+- Gathers context from GitHub issues and existing docs
+- Asks structured questions through 7 phases
+- Generates PRD with decision log and implementation checklist
+- Probes for existing patterns and stakeholder knowledge
+
+**Allowed tools:** Bash(git, gh), Read, Glob, Grep, AskUserQuestion, Write, Task
+
+### simplify (v1.4.0)
+
+**Example prompts:**
+```
+"Simplify this PR before merging"
+"Clean up the accumulated cruft in this branch"
+"Check for over-engineering before I merge"
+"Review this PR for unnecessary complexity"
+```
+
+**What it does:**
+- Identifies debug logging, commented code, unused imports
+- Detects over-engineering and premature abstractions
+- Auto-detects project type for verification commands
+- Outputs risk-rated change summary table
+
+**Allowed tools:** Bash(git, gh), Read, Edit, Glob, Grep
 
 ### update-pr (v1.1.0)
 
