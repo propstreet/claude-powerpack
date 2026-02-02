@@ -187,7 +187,7 @@ fi
 
 **.NET:**
 ```bash
-[ -f *.csproj ] || [ -f *.sln ] && dotnet build && dotnet test
+ls *.sln >/dev/null 2>&1 && dotnet build && dotnet test
 ```
 
 Or use project-specific commands if documented (check README, CONTRIBUTING, or CLAUDE.md).
