@@ -5,6 +5,24 @@ All notable changes to Claude Powerpack will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-02-02
+
+### Added
+
+#### Deep Interview Skill
+- New skill for structured requirements gathering via AskUserQuestion
+- 7-phase interview process: Context → Scope → Approach → Priority → Details → Technical → Timeline
+- Automatic PRD generation with decision log and implementation checklist
+- GitHub issue integration for context gathering
+- Best practices for stakeholder interviews
+
+#### Simplify Skill
+- New skill for pre-merge PR cleanup
+- Identifies accumulated cruft: debug logging, commented code, unused imports
+- Detects over-engineering: premature abstractions, dead code paths, speculative features
+- Framework-agnostic verification (auto-detects Node.js, Python, Go, Rust)
+- Risk-rated change summary table
+
 ## [1.3.0] - 2026-01-31
 
 ### Added
@@ -92,6 +110,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CLAUDE.md, CONTRIBUTING.md, and comprehensive skill documentation
 - Installation instructions and troubleshooting guide
 
+[1.4.0]: https://github.com/propstreet/claude-powerpack/releases/tag/v1.4.0
 [1.3.0]: https://github.com/propstreet/claude-powerpack/releases/tag/v1.3.0
 [1.2.0]: https://github.com/propstreet/claude-powerpack/releases/tag/v1.2.0
 [1.1.1]: https://github.com/propstreet/claude-powerpack/releases/tag/v1.1.1
