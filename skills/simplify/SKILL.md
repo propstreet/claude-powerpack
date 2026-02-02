@@ -3,8 +3,31 @@ name: simplify
 description: Simplify a PR before merging - trim complexity that accumulated during development. Use when preparing to merge, cleaning up code, or reviewing for unnecessary complexity.
 user-invocable: true
 allowed-tools:
-  - Bash(git:*)
-  - Bash(gh:*)
+  # Git: read-only operations
+  - Bash(git log:*)
+  - Bash(git diff:*)
+  - Bash(git status)
+  - Bash(git show:*)
+  - Bash(git ls-files:*)
+  # GitHub CLI: read-only operations
+  - Bash(gh pr view:*)
+  - Bash(gh pr diff:*)
+  # Build/lint tools (for verification step)
+  - Bash(npm run lint:*)
+  - Bash(npm run build:*)
+  - Bash(npm run test:*)
+  - Bash(ruff check:*)
+  - Bash(pylint:*)
+  - Bash(go build:*)
+  - Bash(go vet:*)
+  - Bash(go test:*)
+  - Bash(cargo check:*)
+  - Bash(cargo test:*)
+  # .NET
+  - Bash(dotnet build:*)
+  - Bash(dotnet test:*)
+  - Bash(dotnet format:*)
+  # File operations
   - Read
   - Edit
   - Glob
@@ -28,12 +51,10 @@ Determine base branch and review scope:
 
 ```bash
 # Get base branch from PR, or fall back to default branch
-gh pr view --json baseRefName -q '.baseRefName' 2>/dev/null || \
-  git rev-parse --abbrev-ref origin/HEAD 2>/dev/null | sed 's#origin/##' || echo 'main'
-```
+BASE_BRANCH=$(gh pr view --json baseRefName -q '.baseRefName' 2>/dev/null || \
+  git rev-parse --abbrev-ref origin/HEAD 2>/dev/null | sed 's#origin/##' || echo 'main')
 
-```bash
-git diff <base-branch>...HEAD --stat
+git diff "$BASE_BRANCH"...HEAD --stat
 ```
 
 Read key changed files to understand what was built.
@@ -53,6 +74,7 @@ During development, code often accumulates:
 | Type casts that worked around WIP types          | Fix upstream types now               |
 | Console.log / print statements                   | Remove or use proper logger          |
 | Temporary variable names (temp, foo, xxx)        | Use descriptive names                |
+| Comments referencing PR/PRD/review context       | Rewrite for future maintainers       |
 
 **Note:** Named booleans like `isStarting` are often MORE readable than inlining conditions. Prefer clarity over minimal code.
 
@@ -93,7 +115,40 @@ Look for:
 - Similar but slightly different implementations
 - Code comments that describe a different function
 
-## 5. Address PR Review Comments
+## 5. Clean Up Development-Context Comments
+
+Comments written during development often reference context that won't exist for future maintainers. Review and rewrite comments that:
+
+### Reference PR/Review Context
+
+| Development Comment | Better For Maintainers |
+| ------------------- | ---------------------- |
+| `// P2 finding: add null check` | `// Guard against null from legacy API` |
+| `// Per review feedback` | `// Explicit type conversion for clarity` |
+| `// Addressing P3 concern about perf` | `// Cached to avoid repeated DB calls` |
+| `// Fixed in response to CI failure` | `// Handle edge case where X is empty` |
+
+### Reference PRD/Issue Context
+
+| Development Comment | Better For Maintainers |
+| ------------------- | ---------------------- |
+| `// PRD Phase 2 scope` | `// Extended validation for enterprise users` |
+| `// Part of #531 quick win` | `// Simplified flow for common case` |
+| `// Out of scope for this PR` | (delete - git history has this) |
+| `// MVP implementation, see PRD for full spec` | `// Basic implementation - see [doc] for extension points` |
+
+### Temporal References
+
+| Development Comment | Better For Maintainers |
+| ------------------- | ---------------------- |
+| `// TODO: revisit after merge` | (either do it now or delete) |
+| `// Temporary workaround until X ships` | `// Workaround for [issue] in [dependency]` |
+| `// New approach as of this PR` | (delete - all code was "new" once) |
+| `// Changed from previous implementation` | (delete - git diff shows this) |
+
+**Rule of thumb**: If a comment only makes sense to someone who read the PR, rewrite it or delete it.
+
+## 6. Address PR Review Comments
 
 If there are review comments from GitHub Actions, reviewers, or automated tools:
 
@@ -101,26 +156,40 @@ If there are review comments from GitHub Actions, reviewers, or automated tools:
 - Verify the finding is still valid (reviewers see old commits)
 - Explain trade-offs if not implementing a suggestion
 
-## 6. Verify
+## 7. Verify
 
-After changes, run the project's standard checks:
+After changes, run the project's standard checks based on project type:
 
+**Node.js:**
 ```bash
-# Detect and run appropriate commands based on project type
-# Node.js
-[ -f package.json ] && npm run lint 2>/dev/null && npm run build 2>/dev/null
-
-# Python
-[ -f pyproject.toml ] && ruff check . 2>/dev/null || pylint **/*.py 2>/dev/null
-
-# Go
-[ -f go.mod ] && go build ./... 2>/dev/null && go vet ./... 2>/dev/null
-
-# Rust
-[ -f Cargo.toml ] && cargo check 2>/dev/null
-
-# Or use project-specific commands if documented
+[ -f package.json ] && npm run lint && npm run build
 ```
+
+**Python:**
+```bash
+# Prefer ruff if available, fall back to pylint
+if [ -f pyproject.toml ] || [ -f setup.py ]; then
+  command -v ruff >/dev/null && ruff check .
+  command -v pylint >/dev/null && pylint $(git ls-files '*.py')
+fi
+```
+
+**Go:**
+```bash
+[ -f go.mod ] && go build ./... && go vet ./...
+```
+
+**Rust:**
+```bash
+[ -f Cargo.toml ] && cargo check
+```
+
+**.NET:**
+```bash
+[ -f *.csproj ] || [ -f *.sln ] && dotnet build && dotnet test
+```
+
+Or use project-specific commands if documented (check README, CONTRIBUTING, or CLAUDE.md).
 
 Run relevant tests to ensure nothing broke.
 
@@ -154,6 +223,7 @@ Before marking complete:
 - [ ] No unused imports or variables
 - [ ] No single-use abstractions
 - [ ] No duplicate code blocks
+- [ ] No PR/PRD/review-context comments (rewritten for maintainers)
 - [ ] All tests pass
 - [ ] Linting passes
 

@@ -5,11 +5,17 @@ allowed-tools:
   - Read
   - Write
   - Edit
-  - Bash(node:*)
-  - Bash(git:*)
+  # Node: only for running the extraction script
+  - Bash(node scripts/:*)
+  - Bash(node ./scripts/:*)
+  # Git: read-only operations for code extraction
+  - Bash(git diff:*)
+  - Bash(git show:*)
+  - Bash(git log:*)
+  - Bash(git status)
+  # Utilities for size tracking
   - Bash(wc:*)
   - Bash(ls:*)
-  - Bash(cat:*)
 user-invocable: true
 context: fork
 ---

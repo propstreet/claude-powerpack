@@ -4,8 +4,16 @@ description: Start a structured interview to gather requirements for complex fea
 argument-hint: "<issue-number|prd-path|feature-description>"
 user-invocable: true
 allowed-tools:
-  - Bash(git:*)
-  - Bash(gh:*)
+  # Git: read-only operations
+  - Bash(git log:*)
+  - Bash(git diff:*)
+  - Bash(git status)
+  - Bash(git show:*)
+  # GitHub CLI: read-only operations
+  - Bash(gh issue view:*)
+  - Bash(gh issue list:*)
+  - Bash(gh pr view:*)
+  # File operations
   - Read
   - Glob
   - Grep
@@ -44,17 +52,21 @@ A structured interview process for gathering requirements and making design deci
 
 **Do this silently before asking any questions:**
 
-1. **If issue number provided:**
+1. **If issue number provided** (strip `#` prefix if present):
 
    ```bash
-   gh issue view <number> --comments
+   # User may pass "#531" or "531" - strip the # if present
+   gh issue view 531 --comments
    ```
 
-2. **Search for related documentation:**
+2. **Search for related documentation** using Glob and Grep tools:
 
-   ```bash
-   # Look for PRDs, specs, or design docs
-   find . -name "*.md" | xargs grep -l "<keywords>" 2>/dev/null | head -10
+   ```
+   # Use Glob to find markdown files
+   Glob: **/*.md
+
+   # Use Grep to search for keywords in those files
+   Grep: pattern="<keywords>" glob="*.md"
    ```
 
 3. **Explore current implementation:**
