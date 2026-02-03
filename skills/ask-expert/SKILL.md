@@ -6,8 +6,7 @@ allowed-tools:
   - Write
   - Edit
   # Node: only for running the extraction script
-  - Bash(node scripts/:*)
-  - Bash(node ./scripts/:*)
+  - Bash(node:*scripts/extract-code.js*)
   # Git: read-only operations for code extraction
   - Bash(git diff:*)
   - Bash(git show:*)
