@@ -1054,16 +1054,17 @@ function main() {
     process.exit(1);
   }
 
-  // PHASE 3: Write all results (we know they fit)
-  let totalBytes = existingBytes;
+  // PHASE 3: Write all results in single operation (we know they fit)
+  const combinedOutput = pendingResults.map(r => r.output + "\n\n").join("");
 
+  if (args.output) {
+    fs.appendFileSync(args.output, combinedOutput, "utf8");
+  }
+
+  // Log progress after successful write
+  let totalBytes = existingBytes;
   for (const item of pendingResults) {
     totalBytes += item.contentSize;
-
-    if (args.output) {
-      fs.appendFileSync(args.output, item.output + "\n\n", "utf8");
-    }
-
     if (args["track-size"]) {
       const percent = ((totalBytes / MAX_SIZE_BYTES) * 100).toFixed(1);
       console.error(
@@ -1245,13 +1246,14 @@ function processConfigFile(config, args) {
     process.exit(1);
   }
 
-  // PHASE 3: Write all results (we know they fit)
-  let totalBytes = existingBytes;
+  // PHASE 3: Write all results in single operation (we know they fit)
+  const combinedOutput = pendingResults.map(r => r.output).join("");
+  fs.appendFileSync(outputFile, combinedOutput, "utf8");
 
+  // Log progress after successful write
+  let totalBytes = existingBytes;
   for (const item of pendingResults) {
     totalBytes += item.contentSize;
-    fs.appendFileSync(outputFile, item.output, "utf8");
-
     if (trackSize && !item.isHeader) {
       const percent = ((totalBytes / MAX_SIZE_BYTES) * 100).toFixed(1);
       console.error(
