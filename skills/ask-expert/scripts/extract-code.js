@@ -84,6 +84,13 @@ function checkSizeThresholds(totalBytes, logWarnings = true) {
  * @param {number} existingBytes - Size of existing file content
  */
 function validateSizeLimit(pendingResults, existingBytes) {
+  // Special case: existing file already exceeds limit
+  if (existingBytes >= MAX_SIZE_BYTES) {
+    console.error(`\n❌ Existing file already exceeds ${formatSize(MAX_SIZE_BYTES)} limit (${formatSize(existingBytes)})`);
+    console.error("   No new content can be appended. Start with a fresh file or reduce existing content.");
+    process.exit(1);
+  }
+
   const totalNewBytes = pendingResults.reduce((sum, r) => sum + r.contentSize, 0);
   const projectedTotal = existingBytes + totalNewBytes;
 
