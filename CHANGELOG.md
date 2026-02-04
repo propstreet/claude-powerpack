@@ -5,6 +5,16 @@ All notable changes to Claude Powerpack will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.2] - 2026-02-04
+
+### Fixed
+
+#### Ask Expert Skill
+- Fixed size limit enforcement to validate total size BEFORE writing any output
+- Previously, files were written incrementally and partial content remained after limit exceeded
+- Now uses atomic validation: calculates total size upfront and only writes if everything fits
+- Clear error output shows which items would fit vs. which would exceed the limit
+
 ## [1.4.1] - 2026-02-03
 
 ### Fixed
@@ -118,6 +128,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CLAUDE.md, CONTRIBUTING.md, and comprehensive skill documentation
 - Installation instructions and troubleshooting guide
 
+[1.4.2]: https://github.com/propstreet/claude-powerpack/releases/tag/v1.4.2
 [1.4.1]: https://github.com/propstreet/claude-powerpack/releases/tag/v1.4.1
 [1.4.0]: https://github.com/propstreet/claude-powerpack/releases/tag/v1.4.0
 [1.3.0]: https://github.com/propstreet/claude-powerpack/releases/tag/v1.3.0
