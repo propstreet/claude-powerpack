@@ -925,19 +925,22 @@ function main() {
     process.exit(1);
   }
 
-  const results = [];
+  const pendingResults = [];
   let hasErrors = false;
-  let totalBytes = 0;
+  let existingBytes = 0;
   let sectionIndex = 0;
 
   // Read existing file size if output file specified
   if (args.output && fs.existsSync(args.output)) {
     const stats = fs.statSync(args.output);
-    totalBytes = stats.size;
+    existingBytes = stats.size;
     if (args["track-size"]) {
-      console.error(`📄 ${args.output}: ${formatSize(totalBytes)} (existing)`);
+      console.error(`📄 ${args.output}: ${formatSize(existingBytes)} (existing)`);
     }
   }
+
+  // PHASE 1: Collect all content WITHOUT writing (atomic operation)
+  // This ensures we don't write partial content if total exceeds limit
 
   // Process --staged option (git diff --cached)
   if (args.staged) {
@@ -945,26 +948,12 @@ function main() {
       const stagedDiff = getStagedDiff();
       const output = `### Staged Changes (git diff --cached)\n\n\`\`\`diff\n${stagedDiff}\n\`\`\``;
       const contentSize = Buffer.byteLength(output + "\n\n", "utf8");
-      totalBytes += contentSize;
-
-      if (args.output) {
-        fs.appendFileSync(args.output, output + "\n\n", "utf8");
-      }
-      results.push(output);
-
-      if (args["track-size"]) {
-        const percent = ((totalBytes / MAX_SIZE_BYTES) * 100).toFixed(1);
-        console.error(
-          `[staged] git diff --cached → +${formatSize(contentSize)} (${formatSize(totalBytes)} / ${formatSize(MAX_SIZE_BYTES)}, ${percent}%)`
-        );
-      }
-      // Always enforce size limit, only log warnings if tracking
-      checkSizeThresholds(totalBytes, args["track-size"]);
+      pendingResults.push({
+        label: "[staged] git diff --cached",
+        output,
+        contentSize,
+      });
     } catch (error) {
-      // Re-throw size limit errors to exit immediately
-      if (error instanceof SizeLimitError) {
-        throw error;
-      }
       console.error(`❌ Error getting staged changes: ${error.message}`);
       hasErrors = true;
     }
@@ -978,26 +967,12 @@ function main() {
         // Use ```text since git show includes commit headers and stats, not just diff
         const output = `### Commit: ${commitRef}\n\n\`\`\`text\n${commitDiff}\n\`\`\``;
         const contentSize = Buffer.byteLength(output + "\n\n", "utf8");
-        totalBytes += contentSize;
-
-        if (args.output) {
-          fs.appendFileSync(args.output, output + "\n\n", "utf8");
-        }
-        results.push(output);
-
-        if (args["track-size"]) {
-          const percent = ((totalBytes / MAX_SIZE_BYTES) * 100).toFixed(1);
-          console.error(
-            `[commit] ${commitRef} → +${formatSize(contentSize)} (${formatSize(totalBytes)} / ${formatSize(MAX_SIZE_BYTES)}, ${percent}%)`
-          );
-        }
-        // Always enforce size limit, only log warnings if tracking
-        checkSizeThresholds(totalBytes, args["track-size"]);
+        pendingResults.push({
+          label: `[commit] ${commitRef}`,
+          output,
+          contentSize,
+        });
       } catch (error) {
-        // Re-throw size limit errors to exit immediately
-        if (error instanceof SizeLimitError) {
-          throw error;
-        }
         console.error(`❌ Error getting commit ${commitRef}: ${error.message}`);
         hasErrors = true;
       }
@@ -1019,48 +994,100 @@ function main() {
 
       const result = processFile(fileArg);
       output += result;
-      results.push(output);
 
-      // Calculate size
       const contentSize = Buffer.byteLength(output + "\n\n", "utf8");
-      totalBytes += contentSize;
-
-      // Write to file or collect for stdout
-      if (args.output) {
-        fs.appendFileSync(args.output, output + "\n\n", "utf8");
-      }
-
-      // Show progress if tracking size
-      if (args["track-size"]) {
-        const percent = ((totalBytes / MAX_SIZE_BYTES) * 100).toFixed(1);
-        const filename = path.basename(fileArg.split(":")[0]);
-        console.error(
-          `[${index + 1}/${fileArgs.length}] ${filename} → +${formatSize(contentSize)} (${formatSize(totalBytes)} / ${formatSize(MAX_SIZE_BYTES)}, ${percent}%)`
-        );
-      }
-      // Always enforce size limit, only log warnings if tracking
-      checkSizeThresholds(totalBytes, args["track-size"]);
+      const filename = path.basename(fileArg.split(":")[0]);
+      pendingResults.push({
+        label: `[${index + 1}/${fileArgs.length}] ${filename}`,
+        output,
+        contentSize,
+      });
     } catch (error) {
-      // Re-throw size limit errors to exit immediately
-      if (error instanceof SizeLimitError) {
-        throw error;
-      }
       console.error(`❌ Error processing "${fileArg}": ${error.message}`);
       hasErrors = true;
     }
   }
 
-  if (results.length === 0) {
+  if (pendingResults.length === 0) {
     console.error("\n❌ No content was successfully extracted");
     process.exit(1);
   }
 
+  // PHASE 2: Calculate total size and check limit BEFORE writing
+  const totalNewBytes = pendingResults.reduce((sum, r) => sum + r.contentSize, 0);
+  const projectedTotal = existingBytes + totalNewBytes;
+
+  if (projectedTotal > MAX_SIZE_BYTES) {
+    // Find which items would fit
+    let runningTotal = existingBytes;
+    const wouldFit = [];
+    const wouldExceed = [];
+
+    for (const item of pendingResults) {
+      if (runningTotal + item.contentSize <= MAX_SIZE_BYTES) {
+        wouldFit.push(item);
+        runningTotal += item.contentSize;
+      } else {
+        wouldExceed.push(item);
+      }
+    }
+
+    console.error(`\n❌ Would exceed ${formatSize(MAX_SIZE_BYTES)} limit (${formatSize(projectedTotal)})`);
+    console.error(`   Existing file: ${formatSize(existingBytes)}`);
+    console.error(`   New content: ${formatSize(totalNewBytes)}`);
+    console.error("");
+
+    if (wouldFit.length > 0) {
+      console.error(`✅ These items would fit (${wouldFit.length}):`);
+      for (const item of wouldFit) {
+        console.error(`   • ${item.label}: +${formatSize(item.contentSize)}`);
+      }
+      console.error("");
+    }
+
+    console.error(`❌ These items would exceed the limit (${wouldExceed.length}):`);
+    for (const item of wouldExceed) {
+      console.error(`   • ${item.label}: +${formatSize(item.contentSize)}`);
+    }
+    console.error("");
+    console.error("⚠️  No output was written. Reduce the number of files or use line ranges.");
+    process.exit(1);
+  }
+
+  // PHASE 3: Write all results (we know they fit)
+  let totalBytes = existingBytes;
+
+  for (const item of pendingResults) {
+    totalBytes += item.contentSize;
+
+    if (args.output) {
+      fs.appendFileSync(args.output, item.output + "\n\n", "utf8");
+    }
+
+    if (args["track-size"]) {
+      const percent = ((totalBytes / MAX_SIZE_BYTES) * 100).toFixed(1);
+      console.error(
+        `${item.label} → +${formatSize(item.contentSize)} (${formatSize(totalBytes)} / ${formatSize(MAX_SIZE_BYTES)}, ${percent}%)`
+      );
+    }
+  }
+
+  // Show warnings for approaching limits (but don't error since we already validated)
+  if (args["track-size"]) {
+    if (totalBytes >= WARNING_THRESHOLD_2) {
+      console.error(`⚠️  Very close to ${formatSize(MAX_SIZE_BYTES)} limit!`);
+    } else if (totalBytes >= WARNING_THRESHOLD_1) {
+      console.error(`⚠️  Approaching ${formatSize(WARNING_THRESHOLD_1)}`);
+    }
+  }
+
   // Output results to stdout if no output file specified
   if (!args.output) {
-    console.log(results.join("\n\n"));
+    const allOutput = pendingResults.map(r => r.output).join("\n\n");
+    console.log(allOutput);
   } else if (args["track-size"]) {
     const status = hasErrors ? "⚠️  Completed with errors" : "✅ Saved";
-    const itemCount = `${results.length} ${results.length === 1 ? "item" : "items"}`;
+    const itemCount = `${pendingResults.length} ${pendingResults.length === 1 ? "item" : "items"}`;
     console.error(
       `${status}: ${itemCount} to ${args.output} (${formatSize(totalBytes)} / ${formatSize(MAX_SIZE_BYTES)})`
     );
@@ -1075,8 +1102,6 @@ function main() {
  * @param {object} args - Parsed command-line arguments
  */
 function processConfigFile(config, args) {
-  let totalBytes = 0;
-  let totalFilesProcessed = 0;
   let hasErrors = false;
 
   // Use output from config or args
@@ -1091,11 +1116,12 @@ function processConfigFile(config, args) {
   }
 
   // Read existing file size if output file exists
+  let existingBytes = 0;
   if (fs.existsSync(outputFile)) {
     const stats = fs.statSync(outputFile);
-    totalBytes = stats.size;
+    existingBytes = stats.size;
     if (trackSize) {
-      console.error(`📄 ${outputFile}: ${formatSize(totalBytes)} (existing)`);
+      console.error(`📄 ${outputFile}: ${formatSize(existingBytes)} (existing)`);
     }
   }
 
@@ -1128,7 +1154,9 @@ function processConfigFile(config, args) {
     process.exit(1);
   }
 
-  // Process each section
+  // PHASE 1: Collect all content WITHOUT writing (atomic operation)
+  const pendingResults = [];
+
   for (const [sectionIndex, section] of config.sections.entries()) {
     if (trackSize) {
       console.error(
@@ -1139,8 +1167,13 @@ function processConfigFile(config, args) {
     // Add section header if specified
     if (section.header) {
       const headerContent = `### ${section.header}\n\n`;
-      fs.appendFileSync(outputFile, headerContent, "utf8");
-      totalBytes += Buffer.byteLength(headerContent, "utf8");
+      const headerSize = Buffer.byteLength(headerContent, "utf8");
+      pendingResults.push({
+        label: `[header] ${section.header}`,
+        output: headerContent,
+        contentSize: headerSize,
+        isHeader: true,
+      });
     }
 
     // Process each file in section
@@ -1149,27 +1182,14 @@ function processConfigFile(config, args) {
         const result = processFile(fileArg);
         const content = result + "\n\n";
         const contentSize = Buffer.byteLength(content, "utf8");
-        totalBytes += contentSize;
-
-        // Write to file
-        fs.appendFileSync(outputFile, content, "utf8");
-        totalFilesProcessed++;
-
-        // Show progress if tracking size
-        if (trackSize) {
-          const percent = ((totalBytes / MAX_SIZE_BYTES) * 100).toFixed(1);
-          const filename = path.basename(fileArg.split(":")[0]);
-          console.error(
-            `  [${fileIndex + 1}/${section.files.length}] ${filename} → +${formatSize(contentSize)} (${formatSize(totalBytes)} / ${formatSize(MAX_SIZE_BYTES)}, ${percent}%)`
-          );
-        }
-        // Always enforce size limit, only log warnings if tracking
-        checkSizeThresholds(totalBytes, trackSize);
+        const filename = path.basename(fileArg.split(":")[0]);
+        pendingResults.push({
+          label: `  [${fileIndex + 1}/${section.files.length}] ${filename}`,
+          output: content,
+          contentSize,
+          section: section.header || "(no header)",
+        });
       } catch (error) {
-        // Re-throw size limit errors to exit immediately
-        if (error instanceof SizeLimitError) {
-          throw error;
-        }
         console.error(
           `❌ Error processing "${fileArg}" in section "${section.header || "(no header)"}": ${error.message}`
         );
@@ -1178,9 +1198,78 @@ function processConfigFile(config, args) {
     }
   }
 
+  const totalFiles = pendingResults.filter(r => !r.isHeader).length;
+  if (totalFiles === 0) {
+    console.error("\n❌ No content was successfully extracted");
+    process.exit(1);
+  }
+
+  // PHASE 2: Calculate total size and check limit BEFORE writing
+  const totalNewBytes = pendingResults.reduce((sum, r) => sum + r.contentSize, 0);
+  const projectedTotal = existingBytes + totalNewBytes;
+
+  if (projectedTotal > MAX_SIZE_BYTES) {
+    // Find which items would fit
+    let runningTotal = existingBytes;
+    const wouldFit = [];
+    const wouldExceed = [];
+
+    for (const item of pendingResults) {
+      if (runningTotal + item.contentSize <= MAX_SIZE_BYTES) {
+        wouldFit.push(item);
+        runningTotal += item.contentSize;
+      } else {
+        wouldExceed.push(item);
+      }
+    }
+
+    console.error(`\n❌ Would exceed ${formatSize(MAX_SIZE_BYTES)} limit (${formatSize(projectedTotal)})`);
+    console.error(`   Existing file: ${formatSize(existingBytes)}`);
+    console.error(`   New content: ${formatSize(totalNewBytes)}`);
+    console.error("");
+
+    if (wouldFit.length > 0) {
+      console.error(`✅ These items would fit (${wouldFit.length}):`);
+      for (const item of wouldFit) {
+        console.error(`   • ${item.label}: +${formatSize(item.contentSize)}`);
+      }
+      console.error("");
+    }
+
+    console.error(`❌ These items would exceed the limit (${wouldExceed.length}):`);
+    for (const item of wouldExceed) {
+      console.error(`   • ${item.label}: +${formatSize(item.contentSize)}`);
+    }
+    console.error("");
+    console.error("⚠️  No output was written. Reduce the number of files or use line ranges.");
+    process.exit(1);
+  }
+
+  // PHASE 3: Write all results (we know they fit)
+  let totalBytes = existingBytes;
+
+  for (const item of pendingResults) {
+    totalBytes += item.contentSize;
+    fs.appendFileSync(outputFile, item.output, "utf8");
+
+    if (trackSize && !item.isHeader) {
+      const percent = ((totalBytes / MAX_SIZE_BYTES) * 100).toFixed(1);
+      console.error(
+        `${item.label} → +${formatSize(item.contentSize)} (${formatSize(totalBytes)} / ${formatSize(MAX_SIZE_BYTES)}, ${percent}%)`
+      );
+    }
+  }
+
+  // Show warnings for approaching limits
   if (trackSize) {
+    if (totalBytes >= WARNING_THRESHOLD_2) {
+      console.error(`⚠️  Very close to ${formatSize(MAX_SIZE_BYTES)} limit!`);
+    } else if (totalBytes >= WARNING_THRESHOLD_1) {
+      console.error(`⚠️  Approaching ${formatSize(WARNING_THRESHOLD_1)}`);
+    }
+
     const status = hasErrors ? "⚠️  Completed with errors" : "✅ Saved";
-    const fileCount = `${totalFilesProcessed} ${totalFilesProcessed === 1 ? "file" : "files"}`;
+    const fileCount = `${totalFiles} ${totalFiles === 1 ? "file" : "files"}`;
     const sectionCount = `${config.sections.length} ${config.sections.length === 1 ? "section" : "sections"}`;
     console.error(
       `${status}: ${fileCount}, ${sectionCount} to ${outputFile} (${formatSize(totalBytes)} / ${formatSize(MAX_SIZE_BYTES)})`
