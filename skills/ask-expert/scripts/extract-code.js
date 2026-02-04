@@ -77,6 +77,57 @@ function checkSizeThresholds(totalBytes, logWarnings = true) {
 }
 
 /**
+ * Validate that pending results fit within size limit before writing.
+ * Exits with detailed breakdown if limit would be exceeded.
+ *
+ * @param {Array<{label: string, output: string, contentSize: number}>} pendingResults - Items to write
+ * @param {number} existingBytes - Size of existing file content
+ */
+function validateSizeLimit(pendingResults, existingBytes) {
+  const totalNewBytes = pendingResults.reduce((sum, r) => sum + r.contentSize, 0);
+  const projectedTotal = existingBytes + totalNewBytes;
+
+  if (projectedTotal <= MAX_SIZE_BYTES) {
+    return; // All good
+  }
+
+  // Find which items would fit
+  let runningTotal = existingBytes;
+  const wouldFit = [];
+  const wouldExceed = [];
+
+  for (const item of pendingResults) {
+    if (runningTotal + item.contentSize <= MAX_SIZE_BYTES) {
+      wouldFit.push(item);
+      runningTotal += item.contentSize;
+    } else {
+      wouldExceed.push(item);
+    }
+  }
+
+  console.error(`\n❌ Would exceed ${formatSize(MAX_SIZE_BYTES)} limit (${formatSize(projectedTotal)})`);
+  console.error(`   Existing file: ${formatSize(existingBytes)}`);
+  console.error(`   New content: ${formatSize(totalNewBytes)}`);
+  console.error("");
+
+  if (wouldFit.length > 0) {
+    console.error(`✅ These items would fit (${wouldFit.length}):`);
+    for (const item of wouldFit) {
+      console.error(`   • ${item.label}: +${formatSize(item.contentSize)}`);
+    }
+    console.error("");
+  }
+
+  console.error(`❌ These items would exceed the limit (${wouldExceed.length}):`);
+  for (const item of wouldExceed) {
+    console.error(`   • ${item.label}: +${formatSize(item.contentSize)}`);
+  }
+  console.error("");
+  console.error("⚠️  No output was written. Reduce the number of files or use line ranges.");
+  process.exit(1);
+}
+
+/**
  * Detect programming language from file extension
  * @param {string} filePath - Path to file
  * @returns {string} Language identifier for syntax highlighting
@@ -1013,46 +1064,8 @@ function main() {
     process.exit(1);
   }
 
-  // PHASE 2: Calculate total size and check limit BEFORE writing
-  const totalNewBytes = pendingResults.reduce((sum, r) => sum + r.contentSize, 0);
-  const projectedTotal = existingBytes + totalNewBytes;
-
-  if (projectedTotal > MAX_SIZE_BYTES) {
-    // Find which items would fit
-    let runningTotal = existingBytes;
-    const wouldFit = [];
-    const wouldExceed = [];
-
-    for (const item of pendingResults) {
-      if (runningTotal + item.contentSize <= MAX_SIZE_BYTES) {
-        wouldFit.push(item);
-        runningTotal += item.contentSize;
-      } else {
-        wouldExceed.push(item);
-      }
-    }
-
-    console.error(`\n❌ Would exceed ${formatSize(MAX_SIZE_BYTES)} limit (${formatSize(projectedTotal)})`);
-    console.error(`   Existing file: ${formatSize(existingBytes)}`);
-    console.error(`   New content: ${formatSize(totalNewBytes)}`);
-    console.error("");
-
-    if (wouldFit.length > 0) {
-      console.error(`✅ These items would fit (${wouldFit.length}):`);
-      for (const item of wouldFit) {
-        console.error(`   • ${item.label}: +${formatSize(item.contentSize)}`);
-      }
-      console.error("");
-    }
-
-    console.error(`❌ These items would exceed the limit (${wouldExceed.length}):`);
-    for (const item of wouldExceed) {
-      console.error(`   • ${item.label}: +${formatSize(item.contentSize)}`);
-    }
-    console.error("");
-    console.error("⚠️  No output was written. Reduce the number of files or use line ranges.");
-    process.exit(1);
-  }
+  // PHASE 2: Validate size limit before writing (exits if exceeded)
+  validateSizeLimit(pendingResults, existingBytes);
 
   // PHASE 3: Write all results in single operation (we know they fit)
   const combinedOutput = pendingResults.map(r => r.output + "\n\n").join("");
@@ -1205,46 +1218,8 @@ function processConfigFile(config, args) {
     process.exit(1);
   }
 
-  // PHASE 2: Calculate total size and check limit BEFORE writing
-  const totalNewBytes = pendingResults.reduce((sum, r) => sum + r.contentSize, 0);
-  const projectedTotal = existingBytes + totalNewBytes;
-
-  if (projectedTotal > MAX_SIZE_BYTES) {
-    // Find which items would fit
-    let runningTotal = existingBytes;
-    const wouldFit = [];
-    const wouldExceed = [];
-
-    for (const item of pendingResults) {
-      if (runningTotal + item.contentSize <= MAX_SIZE_BYTES) {
-        wouldFit.push(item);
-        runningTotal += item.contentSize;
-      } else {
-        wouldExceed.push(item);
-      }
-    }
-
-    console.error(`\n❌ Would exceed ${formatSize(MAX_SIZE_BYTES)} limit (${formatSize(projectedTotal)})`);
-    console.error(`   Existing file: ${formatSize(existingBytes)}`);
-    console.error(`   New content: ${formatSize(totalNewBytes)}`);
-    console.error("");
-
-    if (wouldFit.length > 0) {
-      console.error(`✅ These items would fit (${wouldFit.length}):`);
-      for (const item of wouldFit) {
-        console.error(`   • ${item.label}: +${formatSize(item.contentSize)}`);
-      }
-      console.error("");
-    }
-
-    console.error(`❌ These items would exceed the limit (${wouldExceed.length}):`);
-    for (const item of wouldExceed) {
-      console.error(`   • ${item.label}: +${formatSize(item.contentSize)}`);
-    }
-    console.error("");
-    console.error("⚠️  No output was written. Reduce the number of files or use line ranges.");
-    process.exit(1);
-  }
+  // PHASE 2: Validate size limit before writing (exits if exceeded)
+  validateSizeLimit(pendingResults, existingBytes);
 
   // PHASE 3: Write all results in single operation (we know they fit)
   const combinedOutput = pendingResults.map(r => r.output).join("");
