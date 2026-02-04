@@ -78,17 +78,19 @@ function checkSizeThresholds(totalBytes, logWarnings = true) {
 
 /**
  * Validate that pending results fit within size limit before writing.
- * Exits with detailed breakdown if limit would be exceeded.
+ * Throws SizeLimitError with detailed breakdown if limit would be exceeded.
  *
  * @param {Array<{label: string, output: string, contentSize: number}>} pendingResults - Items to write
  * @param {number} existingBytes - Size of existing file content
+ * @throws {SizeLimitError} If adding pendingResults would exceed MAX_SIZE_BYTES
  */
 function validateSizeLimit(pendingResults, existingBytes) {
   // Special case: existing file already exceeds limit
   if (existingBytes >= MAX_SIZE_BYTES) {
-    console.error(`\n❌ Existing file already exceeds ${formatSize(MAX_SIZE_BYTES)} limit (${formatSize(existingBytes)})`);
-    console.error("   No new content can be appended. Start with a fresh file or reduce existing content.");
-    process.exit(1);
+    throw new SizeLimitError(
+      `Existing file already exceeds ${formatSize(MAX_SIZE_BYTES)} limit (${formatSize(existingBytes)})\n` +
+      `No new content can be appended. Start with a fresh file or reduce existing content.`
+    );
   }
 
   const totalNewBytes = pendingResults.reduce((sum, r) => sum + r.contentSize, 0);
@@ -112,26 +114,30 @@ function validateSizeLimit(pendingResults, existingBytes) {
     }
   }
 
-  console.error(`\n❌ Would exceed ${formatSize(MAX_SIZE_BYTES)} limit (${formatSize(projectedTotal)})`);
-  console.error(`   Existing file: ${formatSize(existingBytes)}`);
-  console.error(`   New content: ${formatSize(totalNewBytes)}`);
-  console.error("");
+  // Build detailed error message
+  const lines = [
+    `Would exceed ${formatSize(MAX_SIZE_BYTES)} limit (${formatSize(projectedTotal)})`,
+    `  Existing file: ${formatSize(existingBytes)}`,
+    `  New content: ${formatSize(totalNewBytes)}`,
+    "",
+  ];
 
   if (wouldFit.length > 0) {
-    console.error(`✅ These items would fit (${wouldFit.length}):`);
+    lines.push(`These items would fit (${wouldFit.length}):`);
     for (const item of wouldFit) {
-      console.error(`   • ${item.label}: +${formatSize(item.contentSize)}`);
+      lines.push(`  ✓ ${item.label}: +${formatSize(item.contentSize)}`);
     }
-    console.error("");
+    lines.push("");
   }
 
-  console.error(`❌ These items would exceed the limit (${wouldExceed.length}):`);
+  lines.push(`These items would exceed the limit (${wouldExceed.length}):`);
   for (const item of wouldExceed) {
-    console.error(`   • ${item.label}: +${formatSize(item.contentSize)}`);
+    lines.push(`  ✗ ${item.label}: +${formatSize(item.contentSize)}`);
   }
-  console.error("");
-  console.error("⚠️  No output was written. Reduce the number of files or use line ranges.");
-  process.exit(1);
+  lines.push("");
+  lines.push("No output was written. Reduce the number of files or use line ranges.");
+
+  throw new SizeLimitError(lines.join("\n"));
 }
 
 /**
@@ -1071,7 +1077,7 @@ function main() {
     process.exit(1);
   }
 
-  // PHASE 2: Validate size limit before writing (exits if exceeded)
+  // PHASE 2: Validate size limit before writing (throws SizeLimitError if exceeded)
   validateSizeLimit(pendingResults, existingBytes);
 
   // PHASE 3: Write all results in single operation (we know they fit)
@@ -1225,7 +1231,7 @@ function processConfigFile(config, args) {
     process.exit(1);
   }
 
-  // PHASE 2: Validate size limit before writing (exits if exceeded)
+  // PHASE 2: Validate size limit before writing (throws SizeLimitError if exceeded)
   validateSizeLimit(pendingResults, existingBytes);
 
   // PHASE 3: Write all results in single operation (we know they fit)
@@ -1280,7 +1286,12 @@ if (modulePath === scriptPath) {
   try {
     main();
   } catch (err) {
-    console.error("❌ Error:", err.message);
+    if (err instanceof SizeLimitError) {
+      // SizeLimitError has detailed, pre-formatted message
+      console.error(`\n❌ ${err.message}`);
+    } else {
+      console.error("❌ Error:", err.message);
+    }
     process.exit(1);
   }
 }
