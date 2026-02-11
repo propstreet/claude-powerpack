@@ -5,6 +5,14 @@ All notable changes to Claude Powerpack will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.3] - 2026-02-11
+
+### Fixed
+
+#### Update PR Skill
+- Simplified output instructions: removed unnecessary temp file step and inline bash snippet
+- Skill now directly instructs self-review, user approval, and `gh pr edit` — less prescriptive
+
 ## [1.4.2] - 2026-02-04
 
 ### Fixed
@@ -128,6 +136,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CLAUDE.md, CONTRIBUTING.md, and comprehensive skill documentation
 - Installation instructions and troubleshooting guide
 
+[1.4.3]: https://github.com/propstreet/claude-powerpack/releases/tag/v1.4.3
 [1.4.2]: https://github.com/propstreet/claude-powerpack/releases/tag/v1.4.2
 [1.4.1]: https://github.com/propstreet/claude-powerpack/releases/tag/v1.4.1
 [1.4.0]: https://github.com/propstreet/claude-powerpack/releases/tag/v1.4.0
