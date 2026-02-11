@@ -227,13 +227,9 @@ Before finalizing, verify:
 
 ## Output Instructions
 
-1. **Save to temporary file**: Write the summary to `/tmp/pr-summary.md` (avoids cluttering repo)
-2. **Self-review**: Read your summary and verify all commits and file categories are covered
-3. **User approval**: Show the summary and ask if they want to update the PR
-4. **Update PR** (only if user approves):
-   ```bash
-   gh pr edit --body-file /tmp/pr-summary.md
-   ```
+1. **Self-review**: Re-read your summary and verify all commits and file categories are covered
+2. **User approval**: Show the summary and ask if they want to update the PR
+3. **Update PR** (only if user approves) using `gh pr edit`
 
 ## Common Mistakes to Avoid
 
