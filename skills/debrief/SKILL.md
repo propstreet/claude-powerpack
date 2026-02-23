@@ -67,11 +67,13 @@ Before proposing changes, check what already exists:
    ```
 3. **Check for project docs** that might be relevant:
    ```
-   Glob: {ARCHITECTURE,CONTRIBUTING,DEVELOPMENT}*.md
+   Glob: ARCHITECTURE*.md
+   Glob: CONTRIBUTING*.md
+   Glob: DEVELOPMENT*.md
    Glob: docs/**/*.md
    ```
 4. **Check CLAUDE.md for doc references** — Many repos document their docs structure in CLAUDE.md (e.g., `docs/API.md`, `docs/FRONTEND.md`). Scan for `@` imports and path references to discover project-specific documentation locations.
-4. **Count CLAUDE.md lines** — track against the 300-line budget
+5. **Estimate CLAUDE.md size** — Use the Read tool to check the file and note how many lines it has. Track against the 300-line budget.
 
 For each learning, check:
 - Is it already documented? → Skip
@@ -143,20 +145,25 @@ When updating CONTRIBUTING.md, ARCHITECTURE.md, docs/*.md, or other project docs
 
 ## Phase 4: Apply with Approval
 
-Use AskUserQuestion to get approval:
+Use AskUserQuestion to get approval. Example call:
 
-```
-Question: "Here are the proposed documentation updates from this session. Which should I apply?"
-Header: "Updates"
-multiSelect: true
-Options:
-  - Apply all: Apply all proposed changes
-  - CLAUDE.md only: Only update CLAUDE.md
-  - Rules only: Only update .claude/rules/ files
-  - Let me pick: Show each change individually for approval
+```json
+{
+  "questions": [{
+    "question": "Here are the proposed documentation updates from this session. Which should I apply?",
+    "header": "Updates",
+    "multiSelect": false,
+    "options": [
+      { "label": "Apply all", "description": "Apply all proposed changes listed above" },
+      { "label": "CLAUDE.md only", "description": "Only update CLAUDE.md, skip other files" },
+      { "label": "Rules only", "description": "Only update .claude/rules/ files" },
+      { "label": "Let me pick", "description": "Show each change individually for approval" }
+    ]
+  }]
+}
 ```
 
-If user selects "Let me pick", present each change individually.
+If user selects "Let me pick", present each change individually with a separate AskUserQuestion call.
 
 After applying changes:
 
