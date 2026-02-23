@@ -3,9 +3,19 @@
 > Essential productivity tools for Claude Code: expert consultation docs, code extraction, PR workflows, and more
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.4.3-green.svg)](https://github.com/propstreet/claude-powerpack/releases)
+[![Version](https://img.shields.io/badge/version-1.5.0-green.svg)](https://github.com/propstreet/claude-powerpack/releases)
 
 ## Features
+
+### Debrief Skill
+
+End-of-session learning capture with progressive disclosure:
+
+- **Session Analysis**: Scans conversation for mistakes, corrections, discoveries, and decisions
+- **Doc Audit**: Checks CLAUDE.md, .claude/rules/, and project docs to avoid duplicates
+- **Progressive Disclosure**: High-signal one-liners to CLAUDE.md, detailed knowledge to .claude/rules/
+- **Token Discipline**: Enforces CLAUDE.md under 300 lines, routes domain knowledge to scoped rules
+- **User Approval**: Presents all proposed changes before writing anything
 
 ### Deep Interview Skill
 
@@ -78,6 +88,10 @@ Check that the plugin is installed:
 You should see `claude-powerpack` in the list of installed plugins.
 
 ## Usage
+
+### Debrief Skill
+
+Run at the end of a session to capture learnings. Claude reviews the conversation, identifies what was learned, audits existing docs, and proposes targeted updates. See [Skills Included](#skills-included) for example prompts.
 
 ### Deep Interview Skill
 
@@ -154,6 +168,11 @@ Team members who trust the repository folder will automatically have the plugin 
 
 ## Documentation
 
+### Debrief Skill
+- **[SKILL.md](skills/debrief/SKILL.md)** - Complete debrief workflow
+- **[EXAMPLES.md](skills/debrief/EXAMPLES.md)** - Good vs bad examples, routing decisions
+- **[README](skills/debrief/README.md)** - Quick reference
+
 ### Deep Interview Skill
 - **[SKILL.md](skills/deep-interview/SKILL.md)** - Complete interview workflow
 
@@ -171,6 +190,25 @@ Team members who trust the repository folder will automatically have the plugin 
 - **[README](skills/ask-expert/README.md)** - Quick reference
 
 ## Skills Included
+
+### debrief (v1.5.0)
+
+**Example prompts:**
+```
+"Debrief this session"
+"Capture learnings from what we just did"
+"Update project knowledge with what we learned"
+"What did we learn? Save it."
+```
+
+**What it does:**
+- Reviews session for mistakes, corrections, discoveries, and decisions
+- Audits CLAUDE.md, .claude/rules/, and project docs for existing coverage
+- Proposes targeted updates with progressive disclosure
+- Enforces CLAUDE.md token discipline (under 300 lines, high-signal only)
+- Gets user approval before writing any changes
+
+**Allowed tools:** Bash(git), Read, Edit, Write, Glob, Grep, AskUserQuestion
 
 ### deep-interview (v1.4.0)
 
