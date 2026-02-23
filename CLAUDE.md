@@ -124,8 +124,10 @@ context: fork
 
 - **description** must include activation trigger phrases in quotes for auto-discovery
 - **allowed-tools** use YAML array format with Bash wildcard patterns (e.g., `Bash(git:*)`) for security
-- **user-invocable** explicitly declare if skill appears in slash menu
-- **context: fork** runs skill in isolated sub-agent (keeps main conversation clean)
+- **user-invocable** is the correct spelling (`user-invocable` with c, NOT `user-invokable` with k — VS Code extension has a known bug [#23723](https://github.com/anthropics/claude-code/issues/23723))
+- **context: fork** runs skill in isolated sub-agent — but forked skills have NO conversation history and CANNOT use AskUserQuestion. Skills needing either must omit `context: fork`.
+- **Additional frontmatter fields**: `argument-hint` (autocomplete hint), `model` (per-skill model override), `hooks` (scoped hooks), `agent` (subagent type for forked skills)
+- **Glob tool** does not support brace expansion `{A,B}*.md` — use separate Glob patterns instead
 - Keep SKILL.md under 500 lines (move detailed examples to EXAMPLES.md)
 
 ### Progressive Disclosure Pattern
