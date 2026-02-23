@@ -6,12 +6,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Claude Powerpack is a Claude Code plugin that provides productivity tools for developers. It includes:
 
+- **debrief skill** - Captures session learnings and updates project docs with progressive disclosure
 - **update-pr skill** - Creates comprehensive PR descriptions by systematically reviewing all changes
 - **ask-expert skill** - Extracts code with size tracking for external expert consultation
 
 ## Repository Structure
 
 - `.claude-plugin/plugin.json` - Plugin metadata and configuration
+- `skills/debrief/` - The debrief skill (session learning capture)
+  - `SKILL.md` - 4-phase debrief workflow with CLAUDE.md token discipline rules
+  - `EXAMPLES.md` - Good vs bad examples, routing decision guide
+  - `README.md` - User-facing documentation
 - `skills/update-pr/` - The update-pr skill implementation
   - `SKILL.md` - Multi-phase workflow for comprehensive PR descriptions
   - `EXAMPLES.md` - Good vs bad PR description examples
@@ -43,6 +48,7 @@ This is a plugin repository with no build process. Testing is done by installing
 **Test skill activation** by typing these prompts in Claude Code chat:
 - `Update the PR description` → update-pr skill
 - `Create an expert consultation document for...` → ask-expert skill
+- `Debrief this session` → debrief skill
 
 ### Testing the Extraction Script
 

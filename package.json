@@ -1,6 +1,6 @@
 {
   "name": "claude-powerpack",
-  "version": "1.4.3",
+  "version": "1.5.0",
   "description": "Essential productivity tools for Claude Code: expert consultation docs, code extraction, PR workflows, and more",
   "type": "module",
   "scripts": {
