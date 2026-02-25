@@ -98,25 +98,26 @@ const CORRECTION_PATTERNS = [
   /^never\s/i,
   /^always\s/i,
   /^don'?t\s/i,
-  /^dont\s/i,
   /^do not\s/i,
 
   // Process corrections
   /^use\s.+\s(instead|not)\s/i,
   /^you (need|should|must|have)\s+to/i,
-  /^you can'?t/i,
+  /^you (can'?t|cannot)\b/i,
   /^we (should|must|need|always|never)/i,
   /^this (should|must|needs)/i,
   /^that (should|must|needs)/i,
 
   // Learning/pattern signals
-  /^(read|check|follow|see)\s(our|the)\s(docs|guidelines|patterns|conventions)/i,
-  /^(read|check|follow)\s(our|the)\s/i,
+  /^(read|check|follow|see)\s(our|the)\s/i,
 
   // Tool/workflow corrections
   /npm\s+run\s/i,
   /not\s+use\s/i,
-  /use\s.+not\s/i,
+
+  // Interruption/correction openers
+  /^wait[,.\s!]/i,
+  /^hold on/i,
 ];
 
 /** Patterns that indicate noise (not real corrections) */
@@ -133,11 +134,9 @@ const NOISE_PATTERNS = [
   /^\{"type":\s*"task/i, // JSON task messages
 
   // Simple confirmations / non-corrections
-  /^(yes|ok|sure|good|great|thanks|perfect|done|continue|commit|push)\s*$/i,
   /^(yes|ok|sure|good|great|thanks|perfect|done|continue|commit|push)[,.!\s]*$/i,
   /^(lgtm|looks good|ship it|approved|merge it)\b/i,
-  /^no\s+(this is|that is|worries|need|problem|that'?s)\s+(good|fine|ok|enough)/i, // "no this is good enough"
-  /^no\s+(worries|problem|rush|hurry)/i, // "no worries"
+  /^no[,.\s]\s*(this is|that is|worries|need|problem|that'?s)\s+(good|fine|ok|enough)/i, // "no this is good enough"
 
   // Session management / skill invocations
   /^base directory for this skill/i,
@@ -160,9 +159,9 @@ const NOISE_PATTERNS = [
   /cross.?check against (code|the)/i,
 
   // Contextual non-corrections ("no" + context, not "no" + correction)
-  /^no\s+the\s+\w+\s+is\s+(on|in|at)\s/i, // "no the scalar is on master" — pointing at location, not correcting
-  /^no\s+(worries|rush|problem|it'?s?\s+(fine|ok|good))/i, // dismissals, not corrections
-  /^no\s+(just|it'?s?\s+just)/i, // "no just..." - clarifications
+  /^no[,.\s]\s*the\s+\w+\s+is\s+(on|in|at)\s/i, // "no the scalar is on master" — pointing at location, not correcting
+  /^no[,.\s]\s*(worries|rush|problem|hurry|it'?s?\s+(fine|ok|good))/i, // dismissals, not corrections
+  /^no[,.\s]\s*(just|it'?s?\s+just)/i, // "no just..." - clarifications
 ];
 
 /** Strip XML/HTML-like tags and their content from text before scoring */
@@ -171,6 +170,8 @@ function stripTags(text) {
     .replace(/<teammate-message[\s\S]*?(<\/teammate-message>|$)/g, "")
     .replace(/<task-notification[\s\S]*?(<\/task-notification>|$)/g, "")
     .replace(/<system-reminder[\s\S]*?(<\/system-reminder>|$)/g, "")
+    .replace(/<local-command-caveat[\s\S]*?(<\/local-command-caveat>|$)/g, "")
+    .replace(/<user-prompt-submit-hook[\s\S]*?(<\/user-prompt-submit-hook>|$)/g, "")
     .replace(/<[a-z][\w-]*[^>]*>[\s\S]*?<\/[a-z][\w-]*>/g, "") // generic paired tags
     .trim();
 }

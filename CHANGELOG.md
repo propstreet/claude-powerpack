@@ -5,6 +5,29 @@ All notable changes to Claude Powerpack will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.1] - 2026-02-25
+
+### Fixed
+
+#### Mine History Skill
+- Fixed 3 double-scoring overlaps in correction patterns that inflated scores for certain phrases
+  - Removed redundant `/^dont\s/i` (already covered by `/^don'?t\s/i`)
+  - Merged overlapping learning/pattern signal patterns into single `/^(read|check|follow|see)\s(our|the)\s/i`
+  - Removed unanchored `/use\s.+not\s/i` (subset of anchored `/^use\s.+\s(instead|not)\s/i`)
+- Fixed noise filter gap: "no, that's fine" and other comma-separated dismissals were scored as corrections
+  - Changed all `^no\s+` noise patterns to `^no[,.\s]\s*` to match comma/period after "no"
+  - Consolidated duplicate "no worries/problem/rush" noise patterns into single location
+- Added missing correction patterns: `you cannot`, `wait,`, `hold on`
+- Added missing `<local-command-caveat>` and `<user-prompt-submit-hook>` to `stripTags()`
+- Removed redundant `\s*$` noise pattern (strict subset of `[,.!\s]*$` variant)
+
+### Added
+- Version check script (`npm run check-versions`) to verify all version strings are in sync before release
+- Added check step to release instructions in CLAUDE.md
+
+### Fixed (non-skill)
+- README.md version badge was stuck at 1.5.0 (now tracks release version)
+
 ## [1.6.0] - 2026-02-25
 
 ### Added
@@ -167,6 +190,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CLAUDE.md, CONTRIBUTING.md, and comprehensive skill documentation
 - Installation instructions and troubleshooting guide
 
+[1.6.1]: https://github.com/propstreet/claude-powerpack/releases/tag/v1.6.1
 [1.6.0]: https://github.com/propstreet/claude-powerpack/releases/tag/v1.6.0
 [1.5.0]: https://github.com/propstreet/claude-powerpack/releases/tag/v1.5.0
 [1.4.3]: https://github.com/propstreet/claude-powerpack/releases/tag/v1.4.3
