@@ -18,12 +18,16 @@ jobs:
           node-version: "18"
 
       # Validate JavaScript syntax
-      - name: Validate extraction script syntax
-        run: node --check skills/ask-expert/scripts/extract-code.js
+      - name: Validate script syntax
+        run: npm run validate
 
-      # Test script help command
-      - name: Test extraction script
-        run: node skills/ask-expert/scripts/extract-code.js --help
+      # Test script help commands
+      - name: Test scripts
+        run: npm test
+
+      # Verify all version strings match across repo
+      - name: Check version consistency
+        run: npm run check-versions
 
       # Validate plugin.json schema
       - name: Validate plugin.json
@@ -52,6 +56,9 @@ jobs:
             ".claude-plugin/marketplace.json"
             "skills/ask-expert/SKILL.md"
             "skills/ask-expert/scripts/extract-code.js"
+            "skills/mine-history/SKILL.md"
+            "skills/mine-history/scripts/extract-learnings.js"
+            "scripts/check-versions.js"
           )
 
           for file in "${required_files[@]}"; do
