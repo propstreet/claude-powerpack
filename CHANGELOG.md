@@ -5,6 +5,22 @@ All notable changes to Claude Powerpack will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-02-25
+
+### Added
+
+#### Mine History Skill
+- New skill to extract and synthesize learnings from all past Claude Code session transcripts
+- Pattern-based correction detection: identifies user corrections, mandates, and redirections
+- Signal scoring with brevity weighting: short, direct corrections ranked highest (0-5 scale)
+- Noise filtering: strips agent team messages, task notifications, expert consultation pastes, skill headers, XML tags
+- Lead-text extraction: scores only the first sentence/paragraph to avoid false positives from long messages
+- Deduplication with recurring-pattern boost: corrections seen across multiple sessions get score bonus
+- Topic classification: auto-categorizes by testing, frontend, database, api, tools, services, git, etc.
+- Batch processing support: `--batch-size` and `--batch-offset` for iterative extraction on large histories
+- 5-phase synthesis workflow: Extract → Audit existing docs → Deduplicate → Present proposals → Apply with approval
+- Standalone Node.js extraction script (zero dependencies, ESM, Node 18+)
+
 ## [1.5.0] - 2026-02-23
 
 ### Added
@@ -151,6 +167,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CLAUDE.md, CONTRIBUTING.md, and comprehensive skill documentation
 - Installation instructions and troubleshooting guide
 
+[1.6.0]: https://github.com/propstreet/claude-powerpack/releases/tag/v1.6.0
 [1.5.0]: https://github.com/propstreet/claude-powerpack/releases/tag/v1.5.0
 [1.4.3]: https://github.com/propstreet/claude-powerpack/releases/tag/v1.4.3
 [1.4.2]: https://github.com/propstreet/claude-powerpack/releases/tag/v1.4.2

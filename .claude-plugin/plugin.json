@@ -1,6 +1,6 @@
 {
   "name": "claude-powerpack",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "Essential productivity tools for Claude Code: expert consultation docs, code extraction, PR workflows, and more",
   "author": {
     "name": "Propstreet",
@@ -20,7 +20,9 @@
     "prd",
     "simplify",
     "debrief",
-    "session-learnings"
+    "session-learnings",
+    "history-mining",
+    "corrections"
   ],
   "skills": "./skills/"
 }

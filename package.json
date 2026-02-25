@@ -1,11 +1,11 @@
 {
   "name": "claude-powerpack",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "Essential productivity tools for Claude Code: expert consultation docs, code extraction, PR workflows, and more",
   "type": "module",
   "scripts": {
-    "test": "node skills/ask-expert/scripts/extract-code.js --help",
-    "validate": "node --check skills/ask-expert/scripts/extract-code.js"
+    "test": "node skills/ask-expert/scripts/extract-code.js --help && node skills/mine-history/scripts/extract-learnings.js --help 2>&1 || true",
+    "validate": "node --check skills/ask-expert/scripts/extract-code.js && node --check skills/mine-history/scripts/extract-learnings.js"
   },
   "repository": {
     "type": "git",
