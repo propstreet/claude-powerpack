@@ -136,7 +136,7 @@ const NOISE_PATTERNS = [
   // Simple confirmations / non-corrections
   /^(yes|ok|sure|good|great|thanks|perfect|done|continue|commit|push)[,.!\s]*$/i,
   /^(lgtm|looks good|ship it|approved|merge it)\b/i,
-  /^no[,.\s]\s*(this is|that is|worries|need|problem|that'?s)\s+(good|fine|ok|enough)/i, // "no this is good enough"
+  /^no[,.\s!]\s*(this is|that is|worries|need|problem|that'?s)\s+(good|fine|ok|enough)/i, // "no this is good enough"
 
   // Session management / skill invocations
   /^base directory for this skill/i,
@@ -159,9 +159,9 @@ const NOISE_PATTERNS = [
   /cross.?check against (code|the)/i,
 
   // Contextual non-corrections ("no" + context, not "no" + correction)
-  /^no[,.\s]\s*the\s+\w+\s+is\s+(on|in|at)\s/i, // "no the scalar is on master" — pointing at location, not correcting
-  /^no[,.\s]\s*(worries|rush|problem|hurry|it'?s?\s+(fine|ok|good))/i, // dismissals, not corrections
-  /^no[,.\s]\s*(just|it'?s?\s+just)/i, // "no just..." - clarifications
+  /^no[,.\s!]\s*the\s+\w+\s+is\s+(on|in|at)\s/i, // "no the scalar is on master" — pointing at location, not correcting
+  /^no[,.\s!]\s*(worries|rush|problem|hurry|it'?s?\s+(fine|ok|good))/i, // dismissals, not corrections
+  /^no[,.\s!]\s*(just|it'?s?\s+just)/i, // "no just..." - clarifications
 ];
 
 /** Strip XML/HTML-like tags and their content from text before scoring */
