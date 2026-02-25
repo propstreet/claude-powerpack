@@ -319,14 +319,21 @@ function extractText(message) {
 }
 
 /**
+ * Normalize a timestamp (ISO string or epoch ms/s) to epoch milliseconds.
+ */
+function toEpochMs(ts) {
+  if (!ts) return 0;
+  if (typeof ts === "string") return new Date(ts).getTime() || 0;
+  return ts < 1e12 ? ts * 1000 : ts;
+}
+
+/**
  * Format a timestamp (ISO string or epoch ms/s) to YYYY-MM-DD.
  */
 function formatDate(ts) {
   if (!ts) return "unknown";
-  if (typeof ts === "string") return new Date(ts).toISOString().slice(0, 10);
-  // Distinguish epoch seconds (<1e12) from epoch milliseconds
-  const ms = ts < 1e12 ? ts * 1000 : ts;
-  return new Date(ms).toISOString().slice(0, 10);
+  const d = new Date(toEpochMs(ts));
+  return d.toISOString().slice(0, 10);
 }
 
 /**
@@ -517,7 +524,7 @@ async function main() {
   }
 
   // Sort by score (highest first), then by timestamp (newest first)
-  allPairs.sort((a, b) => b.score - a.score || (b.timestamp || 0) - (a.timestamp || 0));
+  allPairs.sort((a, b) => b.score - a.score || toEpochMs(b.timestamp) - toEpochMs(a.timestamp));
 
   // Cap at max pairs
   if (allPairs.length > MAX_PAIRS) {
