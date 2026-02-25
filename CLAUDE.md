@@ -243,6 +243,9 @@ After merging version bump to main:
 # Switch to main and pull
 git checkout main && git pull
 
+# Verify all version strings are in sync (exits 1 on mismatch)
+npm run check-versions
+
 # Create GitHub release (uses CHANGELOG content for notes)
 gh release create v1.1.1 --title "v1.1.1" --notes "$(cat <<'EOF'
 ## Fixed
