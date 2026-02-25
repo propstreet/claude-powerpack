@@ -32,6 +32,7 @@ Claude Powerpack is a Claude Code plugin that provides productivity tools for de
   - `EXAMPLES.md` - Detailed usage examples and patterns
   - `README.md` - User-facing documentation
   - `scripts/extract-code.js` - Node.js script for code extraction with size tracking
+- `scripts/check-versions.js` - Verifies all version strings are in sync (used by CI and releases)
 
 ## Development Commands
 
@@ -204,6 +205,7 @@ Before submitting changes:
 6. ✅ Check size tracking accuracy
 7. ✅ Test error handling (missing files, invalid ranges, no PR, etc.)
 8. ✅ Update version in `plugin.json` if needed
+9. ✅ Run `node scripts/check-versions.js` to verify version consistency
 
 ## Version Management
 
@@ -218,6 +220,8 @@ The plugin uses semantic versioning. **When bumping versions, update ALL of thes
 | `CHANGELOG.md` | New `## [x.y.z]` section + footer link |
 
 **marketplace.json is what Claude Code settings displays** — forgetting it shows stale versions to users.
+
+Run `npm run check-versions` (or `node scripts/check-versions.js`) to verify — CI enforces this on every PR.
 
 ### Git Workflow
 
