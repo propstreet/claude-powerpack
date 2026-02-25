@@ -4,15 +4,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Claude Powerpack is a Claude Code plugin that provides productivity tools for developers. It includes:
+Claude Powerpack is a Claude Code plugin that provides productivity tools for developers. Skills (alphabetical):
 
-- **debrief skill** - Captures session learnings and updates project docs with progressive disclosure
-- **update-pr skill** - Creates comprehensive PR descriptions by systematically reviewing all changes
-- **ask-expert skill** - Extracts code with size tracking for external expert consultation
+- **[ask-expert](skills/ask-expert/SKILL.md)** - Extracts code with size tracking for external expert consultation
+- **[debrief](skills/debrief/SKILL.md)** - Captures session learnings and updates project docs with progressive disclosure
+- **[deep-interview](skills/deep-interview/SKILL.md)** - Structured requirements gathering via AskUserQuestion
+- **[mine-history](skills/mine-history/SKILL.md)** - Extracts learnings from all past session transcripts via pattern-based correction detection
+- **[simplify](skills/simplify/SKILL.md)** - Pre-merge PR cleanup: trims accumulated cruft and over-engineering
+- **[update-pr](skills/update-pr/SKILL.md)** - Creates comprehensive PR descriptions by systematically reviewing all changes
 
 ## Repository Structure
 
 - `.claude-plugin/plugin.json` - Plugin metadata and configuration
+- `skills/mine-history/` - Session history mining skill
+  - `SKILL.md` - 5-phase workflow for extracting and synthesizing learnings
+  - `scripts/extract-learnings.js` - Node.js extraction script (zero deps, ESM)
 - `skills/debrief/` - The debrief skill (session learning capture)
   - `SKILL.md` - 4-phase debrief workflow with CLAUDE.md token discipline rules
   - `EXAMPLES.md` - Good vs bad examples, routing decision guide
@@ -206,9 +212,12 @@ The plugin uses semantic versioning. **When bumping versions, update ALL of thes
 | File | Field/Location |
 |------|----------------|
 | `.claude-plugin/plugin.json` | `"version": "x.y.z"` |
+| `.claude-plugin/marketplace.json` | `"version"` in **both** top-level and `plugins[0]` |
 | `package.json` | `"version": "x.y.z"` |
 | `README.md` | Version badge URL |
 | `CHANGELOG.md` | New `## [x.y.z]` section + footer link |
+
+**marketplace.json is what Claude Code settings displays** — forgetting it shows stale versions to users.
 
 ### Git Workflow
 
