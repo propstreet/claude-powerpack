@@ -410,9 +410,12 @@ async function main() {
     const encoded = resolved.replace(/[\\/]/g, "-");
     projectDir = path.join(PROJECTS_DIR, encoded);
 
-    // Fall back to treating --project as a direct path to the encoded directory
+    // Fall back to treating --project as a direct session directory (only if it contains .jsonl files)
     if (!fs.existsSync(projectDir) && fs.existsSync(args.project)) {
-      projectDir = args.project;
+      const hasJsonl = fs.readdirSync(args.project).some((f) => f.endsWith(".jsonl"));
+      if (hasJsonl) {
+        projectDir = args.project;
+      }
     }
   } else {
     // Auto-detect: use the project dir with the most session files
