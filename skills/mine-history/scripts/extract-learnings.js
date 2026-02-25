@@ -116,8 +116,8 @@ const CORRECTION_PATTERNS = [
   /not\s+use\s/i,
 
   // Interruption/correction openers
-  /^wait[,.\s!]/i,
-  /^hold on/i,
+  /^wait\b(?:[,:;.!?\s\u2014-]|$)/i,
+  /^hold on\b(?:[,:;.!?\s\u2014-]|$)/i,
 ];
 
 /** Patterns that indicate noise (not real corrections) */

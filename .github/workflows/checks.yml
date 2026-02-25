@@ -17,17 +17,21 @@ jobs:
         with:
           node-version: "18"
 
+      # Verify all version strings match (no deps needed, fail fast)
+      - name: Check version consistency
+        run: node scripts/check-versions.js
+
       # Validate JavaScript syntax
       - name: Validate script syntax
-        run: npm run validate
+        run: |
+          node --check skills/ask-expert/scripts/extract-code.js
+          node --check skills/mine-history/scripts/extract-learnings.js
 
       # Test script help commands
       - name: Test scripts
-        run: npm test
-
-      # Verify all version strings match across repo
-      - name: Check version consistency
-        run: npm run check-versions
+        run: |
+          node skills/ask-expert/scripts/extract-code.js --help
+          node skills/mine-history/scripts/extract-learnings.js --help
 
       # Validate plugin.json schema
       - name: Validate plugin.json
