@@ -4,14 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Claude Powerpack is a Claude Code plugin that provides productivity tools for developers. It includes:
+Claude Powerpack is a Claude Code plugin that provides productivity tools for developers. Skills (alphabetical):
 
-- **mine-history skill** - Extracts learnings from all past session transcripts via pattern-based correction detection
-- **debrief skill** - Captures session learnings and updates project docs with progressive disclosure
-- **simplify skill** - Pre-merge PR cleanup: trims accumulated cruft and over-engineering
-- **deep-interview skill** - Structured requirements gathering via AskUserQuestion
-- **update-pr skill** - Creates comprehensive PR descriptions by systematically reviewing all changes
-- **ask-expert skill** - Extracts code with size tracking for external expert consultation
+- **[ask-expert](skills/ask-expert/SKILL.md)** - Extracts code with size tracking for external expert consultation
+- **[debrief](skills/debrief/SKILL.md)** - Captures session learnings and updates project docs with progressive disclosure
+- **[deep-interview](skills/deep-interview/SKILL.md)** - Structured requirements gathering via AskUserQuestion
+- **[mine-history](skills/mine-history/SKILL.md)** - Extracts learnings from all past session transcripts via pattern-based correction detection
+- **[simplify](skills/simplify/SKILL.md)** - Pre-merge PR cleanup: trims accumulated cruft and over-engineering
+- **[update-pr](skills/update-pr/SKILL.md)** - Creates comprehensive PR descriptions by systematically reviewing all changes
 
 ## Repository Structure
 

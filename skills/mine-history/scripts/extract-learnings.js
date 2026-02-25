@@ -11,6 +11,7 @@
  */
 
 import fs from "fs";
+import os from "os";
 import path from "path";
 import readline from "readline";
 import { parseArgs } from "util";
@@ -18,6 +19,21 @@ import { parseArgs } from "util";
 // ============================================================================
 // CLI Arguments
 // ============================================================================
+
+const USAGE = `Usage: extract-learnings.js [options]
+
+Extract correction pairs from Claude Code session transcripts.
+
+Options:
+  -p, --project <path>              Project directory (auto-detects if omitted)
+  -o, --output <file>               Output file (default: learnings-raw.md)
+  -m, --max-pairs <n>               Max correction pairs to output (default: 500)
+      --min-correction-length <n>   Min chars for a message to count (default: 15)
+      --since-days <n>              Only scan sessions from last N days (default: 90)
+  -b, --batch-size <n>              Process N sessions per batch, 0 = all (default: 0)
+      --batch-offset <n>            Skip first N sessions in batch (default: 0)
+  -v, --verbose                     Show per-session stats
+  -h, --help                        Show this help`;
 
 const { values: args } = parseArgs({
   options: {
@@ -29,16 +45,32 @@ const { values: args } = parseArgs({
     "batch-size": { type: "string", short: "b", default: "0" },
     "batch-offset": { type: "string", default: "0" },
     verbose: { type: "boolean", short: "v", default: false },
+    help: { type: "boolean", short: "h", default: false },
   },
+  strict: true,
 });
 
-const CLAUDE_DIR = path.join(process.env.HOME, ".claude");
+if (args.help) {
+  console.log(USAGE);
+  process.exit(0);
+}
+
+function requireInt(value, name) {
+  const n = parseInt(value, 10);
+  if (!Number.isFinite(n) || n < 0) {
+    console.error(`Invalid value for --${name}: "${value}" (expected non-negative integer)`);
+    process.exit(1);
+  }
+  return n;
+}
+
+const CLAUDE_DIR = path.join(os.homedir(), ".claude");
 const PROJECTS_DIR = path.join(CLAUDE_DIR, "projects");
-const MAX_PAIRS = parseInt(args["max-pairs"], 10);
-const MIN_CORRECTION_LENGTH = parseInt(args["min-correction-length"], 10);
-const SINCE_DAYS = parseInt(args["since-days"], 10);
-const BATCH_SIZE = parseInt(args["batch-size"], 10); // 0 = all at once
-const BATCH_OFFSET = parseInt(args["batch-offset"], 10);
+const MAX_PAIRS = requireInt(args["max-pairs"], "max-pairs");
+const MIN_CORRECTION_LENGTH = requireInt(args["min-correction-length"], "min-correction-length");
+const SINCE_DAYS = requireInt(args["since-days"], "since-days");
+const BATCH_SIZE = requireInt(args["batch-size"], "batch-size"); // 0 = all at once
+const BATCH_OFFSET = requireInt(args["batch-offset"], "batch-offset");
 const VERBOSE = args.verbose;
 
 // ============================================================================
@@ -71,7 +103,7 @@ const CORRECTION_PATTERNS = [
 
   // Process corrections
   /^use\s.+\s(instead|not)\s/i,
-  /^you (need|should|must|have)\sto/i,
+  /^you (need|should|must|have)\s+to/i,
   /^you can'?t/i,
   /^we (should|must|need|always|never)/i,
   /^this (should|must|needs)/i,
@@ -287,6 +319,17 @@ function extractText(message) {
 }
 
 /**
+ * Format a timestamp (ISO string or epoch ms/s) to YYYY-MM-DD.
+ */
+function formatDate(ts) {
+  if (!ts) return "unknown";
+  if (typeof ts === "string") return new Date(ts).toISOString().slice(0, 10);
+  // Distinguish epoch seconds (<1e12) from epoch milliseconds
+  const ms = ts < 1e12 ? ts * 1000 : ts;
+  return new Date(ms).toISOString().slice(0, 10);
+}
+
+/**
  * Truncate text to maxLen, preserving word boundaries.
  */
 function truncate(text, maxLen = 300) {
@@ -328,6 +371,7 @@ async function processSession(filePath) {
 
       if (score > 0) {
         pairs.push({
+          userTextFull: userText,
           userText: truncate(userText, 300),
           assistantContext: truncate(prevAssistantText, 200),
           charLen: userText.length,
@@ -352,12 +396,24 @@ async function processSession(filePath) {
 // ============================================================================
 
 async function main() {
+  if (!fs.existsSync(PROJECTS_DIR)) {
+    console.error(`Claude Code projects directory not found: ${PROJECTS_DIR}`);
+    console.error("Is Claude Code installed? Sessions are stored in ~/.claude/projects/");
+    process.exit(1);
+  }
+
   // Resolve project directory
   let projectDir;
   if (args.project) {
-    // Encode project path the same way Claude Code does
-    const encoded = args.project.replace(/\//g, "-");
+    // Encode project path the same way Claude Code does: resolve, then replace separators
+    const resolved = path.resolve(args.project);
+    const encoded = resolved.replace(/[\\/]/g, "-");
     projectDir = path.join(PROJECTS_DIR, encoded);
+
+    // Fall back to treating --project as a direct path to the encoded directory
+    if (!fs.existsSync(projectDir) && fs.existsSync(args.project)) {
+      projectDir = args.project;
+    }
   } else {
     // Auto-detect: use the project dir with the most session files
     const dirs = fs.readdirSync(PROJECTS_DIR).filter((d) => {
@@ -377,7 +433,8 @@ async function main() {
   }
 
   if (!projectDir || !fs.existsSync(projectDir)) {
-    console.error(`Project directory not found: ${projectDir}`);
+    console.error(`Project session directory not found: ${projectDir}`);
+    console.error("Tip: use --project=/path/to/your/project or pass the encoded directory directly");
     process.exit(1);
   }
 
@@ -428,10 +485,10 @@ async function main() {
 
   console.error(`Processed ${processed} sessions, found ${allPairs.length} corrections`);
 
-  // Deduplicate by user text (keep highest-scored instance)
+  // Deduplicate by full user text (keep highest-scored instance)
   const seen = new Map();
   for (const pair of allPairs) {
-    const key = pair.userText.toLowerCase().trim();
+    const key = pair.userTextFull.toLowerCase().trim();
     const existing = seen.get(key);
     if (!existing || pair.score > existing.score) {
       if (existing) {
@@ -491,9 +548,7 @@ async function main() {
     lines.push("");
 
     for (const pair of pairs) {
-      const date = pair.timestamp
-        ? new Date(typeof pair.timestamp === "string" ? pair.timestamp : pair.timestamp).toISOString().slice(0, 10)
-        : "unknown";
+      const date = formatDate(pair.timestamp);
       const scoreStars = "★".repeat(pair.score) + "☆".repeat(5 - pair.score);
       const recurTag = pair.recurring ? ` 🔁×${pair.occurrences}` : "";
 
@@ -501,10 +556,9 @@ async function main() {
       lines.push("");
       lines.push(`**User:** ${pair.userText}`);
       if (pair.assistantContext) {
-        // Escape markdown headers in context to prevent them from being parsed as section headers
-        const safeContext = pair.assistantContext.replace(/^(#{1,4})\s/gm, "$1\\");
+        // Use blockquote to prevent context markdown from becoming top-level headers
         lines.push("");
-        lines.push(`**Context:** ${safeContext}`);
+        lines.push(`> **Context:** ${pair.assistantContext.replace(/\n/g, " ")}`);
       }
       lines.push("");
     }
