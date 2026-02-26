@@ -5,6 +5,12 @@ All notable changes to Claude Powerpack will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-02-26
+
+### Added
+- **code-researcher agent** — Deep codebase analysis specialist for tracing execution flows, finding usage patterns, mapping architectures, and auditing for inconsistencies. Supports ast-grep structural search, git history investigation, and quantitative data pipelines. Includes model selection guidance in description field — orchestrating agents know when to use Sonnet (fast lookups) vs Opus (deep analysis).
+- **Agent distribution support** — Plugin now distributes agents via `agents/` directory alongside existing skills
+
 ## [1.6.1] - 2026-02-25
 
 ### Fixed
@@ -190,6 +196,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CLAUDE.md, CONTRIBUTING.md, and comprehensive skill documentation
 - Installation instructions and troubleshooting guide
 
+[1.7.0]: https://github.com/propstreet/claude-powerpack/releases/tag/v1.7.0
 [1.6.1]: https://github.com/propstreet/claude-powerpack/releases/tag/v1.6.1
 [1.6.0]: https://github.com/propstreet/claude-powerpack/releases/tag/v1.6.0
 [1.5.0]: https://github.com/propstreet/claude-powerpack/releases/tag/v1.5.0

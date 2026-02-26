@@ -1,7 +1,7 @@
 {
   "name": "claude-powerpack",
-  "version": "1.6.1",
-  "description": "Essential productivity tools for Claude Code: expert consultation docs, code extraction, PR workflows, and more",
+  "version": "1.7.0",
+  "description": "Essential productivity tools for Claude Code: deep codebase analysis agent, expert consultation docs, code extraction, PR workflows, and more",
   "type": "module",
   "scripts": {
     "test": "node skills/ask-expert/scripts/extract-code.js --help && node skills/mine-history/scripts/extract-learnings.js --help",

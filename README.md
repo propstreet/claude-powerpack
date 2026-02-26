@@ -1,11 +1,22 @@
 # Claude Powerpack
 
-> Essential productivity tools for Claude Code: expert consultation docs, code extraction, PR workflows, and more
+> Essential productivity tools for Claude Code: deep codebase analysis agent, expert consultation docs, code extraction, PR workflows, and more
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.6.1-green.svg)](https://github.com/propstreet/claude-powerpack/releases)
+[![Version](https://img.shields.io/badge/version-1.7.0-green.svg)](https://github.com/propstreet/claude-powerpack/releases)
 
 ## Features
+
+### Code Researcher Agent
+
+Deep codebase analysis specialist for answering complex questions about code:
+
+- **Execution Flow Tracing**: Follows call chains across frontend/backend boundaries through every layer
+- **Usage Pattern Finding**: Quantified counts with file:line references
+- **Architecture Mapping**: Full hierarchies with ASCII diagrams
+- **Inconsistency Auditing**: Severity-rated findings across all consumer layers
+- **Structural Search**: ast-grep for AST-level pattern matching
+- **Git Investigation**: History, blame, evolution tracking
 
 ### Debrief Skill
 
@@ -89,6 +100,10 @@ You should see `claude-powerpack` in the list of installed plugins.
 
 ## Usage
 
+### Code Researcher Agent
+
+The code-researcher agent activates when Claude Code spawns a sub-agent for deep codebase analysis. It's used automatically by the Task tool when research questions match its description. See [Skills Included](#skills-included) for example prompts.
+
 ### Debrief Skill
 
 Run at the end of a session to capture learnings. Claude reviews the conversation, identifies what was learned, audits existing docs, and proposes targeted updates. See [Skills Included](#skills-included) for example prompts.
@@ -168,6 +183,9 @@ Team members who trust the repository folder will automatically have the plugin 
 
 ## Documentation
 
+### Code Researcher Agent
+- **[Agent Definition](agents/code-researcher.md)** - Full agent prompt with methodology, tool guidance, and output calibration
+
 ### Debrief Skill
 - **[SKILL.md](skills/debrief/SKILL.md)** - Complete debrief workflow
 - **[EXAMPLES.md](skills/debrief/EXAMPLES.md)** - Good vs bad examples, routing decisions
@@ -189,7 +207,28 @@ Team members who trust the repository folder will automatically have the plugin 
 - **[EXAMPLES.md](skills/ask-expert/EXAMPLES.md)** - Usage patterns and workflows
 - **[README](skills/ask-expert/README.md)** - Quick reference
 
-## Skills Included
+## Agents & Skills Included
+
+### code-researcher (v1.7.0)
+
+**Example prompts:**
+```
+"Research how the auth flow works end-to-end"
+"Find all error handling patterns and check for inconsistencies"
+"Map the test infrastructure architecture"
+"Trace the execution flow from the API endpoint to the database query"
+```
+
+**What it does:**
+- Deep codebase analysis using ast-grep, ripgrep, git, and native Claude Code tools
+- Traces execution flows across frontend/backend boundaries
+- Finds usage patterns with quantified counts
+- Audits for inconsistencies with severity-rated findings
+- Maps architecture hierarchies with ASCII diagrams
+
+**Model guidance:** Use Sonnet for fast lookups and pattern counting; use Opus for deep architecture mapping and multi-layer flow tracing.
+
+**Allowed tools:** Bash(ast-grep, rg, grep, find, git, jq, wc, head, tail, cat, sort, uniq, cut, tr, xargs, sed, awk, diff), Read, Glob, Grep
 
 ### debrief (v1.5.0)
 

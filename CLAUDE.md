@@ -4,7 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Claude Powerpack is a Claude Code plugin that provides productivity tools for developers. Skills (alphabetical):
+Claude Powerpack is a Claude Code plugin that provides productivity tools for developers.
+
+Agents:
+
+- **[code-researcher](agents/code-researcher.md)** - Deep codebase analysis using ast-grep, ripgrep, git, and native tools
+
+Skills (alphabetical):
 
 - **[ask-expert](skills/ask-expert/SKILL.md)** - Extracts code with size tracking for external expert consultation
 - **[debrief](skills/debrief/SKILL.md)** - Captures session learnings and updates project docs with progressive disclosure
@@ -16,6 +22,7 @@ Claude Powerpack is a Claude Code plugin that provides productivity tools for de
 ## Repository Structure
 
 - `.claude-plugin/plugin.json` - Plugin metadata and configuration
+- `agents/code-researcher.md` - Deep codebase analysis agent (ast-grep, ripgrep, git)
 - `skills/mine-history/` - Session history mining skill
   - `SKILL.md` - 5-phase workflow for extracting and synthesizing learnings
   - `scripts/extract-learnings.js` - Node.js extraction script (zero deps, ESM)
@@ -84,7 +91,9 @@ wc -c /tmp/test.md
 The plugin follows Claude Code's plugin specification:
 - `plugin.json` defines metadata (name, version, description, repository)
 - Skills are placed in `skills/{skill-name}/` directories
+- Agents are placed in `agents/` directory (referenced via `"agents": "./agents/"` in plugin.json)
 - Each skill has `SKILL.md` with YAML frontmatter defining activation criteria
+- Each agent has a markdown file with YAML frontmatter defining name, description, model, color, and tools
 
 ### Skill Activation
 
