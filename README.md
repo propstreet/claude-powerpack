@@ -3,7 +3,7 @@
 > Essential productivity tools for Claude Code: deep codebase analysis agent, expert consultation docs, code extraction, PR workflows, and more
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.7.0-green.svg)](https://github.com/propstreet/claude-powerpack/releases)
+[![Version](https://img.shields.io/badge/version-1.7.1-green.svg)](https://github.com/propstreet/claude-powerpack/releases)
 
 ## Features
 
