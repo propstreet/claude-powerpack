@@ -102,27 +102,27 @@ You should see `claude-powerpack` in the list of installed plugins.
 
 ### Code Researcher Agent
 
-The code-researcher agent activates when Claude Code spawns a sub-agent for deep codebase analysis. It's used automatically by the Task tool when research questions match its description. See [Skills Included](#skills-included) for example prompts.
+The code-researcher agent activates when Claude Code spawns a sub-agent for deep codebase analysis. It's used automatically by the Task tool when research questions match its description. See [Skills Included](#agents--skills-included) for example prompts.
 
 ### Debrief Skill
 
-Run at the end of a session to capture learnings. Claude reviews the conversation, identifies what was learned, audits existing docs, and proposes targeted updates. See [Skills Included](#skills-included) for example prompts.
+Run at the end of a session to capture learnings. Claude reviews the conversation, identifies what was learned, audits existing docs, and proposes targeted updates. See [Skills Included](#agents--skills-included) for example prompts.
 
 ### Deep Interview Skill
 
-Ask Claude to interview you about a feature before implementation. Claude will research context, ask structured questions, and generate a PRD. See [Skills Included](#skills-included) for example prompts.
+Ask Claude to interview you about a feature before implementation. Claude will research context, ask structured questions, and generate a PRD. See [Skills Included](#agents--skills-included) for example prompts.
 
 ### Simplify Skill
 
-Ask Claude to simplify your PR before merging. Claude will identify accumulated cruft, over-engineering, and suggest cleanups with risk ratings. See [Skills Included](#skills-included) for example prompts.
+Ask Claude to simplify your PR before merging. Claude will identify accumulated cruft, over-engineering, and suggest cleanups with risk ratings. See [Skills Included](#agents--skills-included) for example prompts.
 
 ### Update PR Skill
 
-Ask Claude to update or prepare a PR description. Claude will systematically inventory all changes, categorize them, and create a structured summary. See [Skills Included](#skills-included) for example prompts.
+Ask Claude to update or prepare a PR description. Claude will systematically inventory all changes, categorize them, and create a structured summary. See [Skills Included](#agents--skills-included) for example prompts.
 
 ### Ask Expert Skill
 
-Ask Claude to create consultation documents for external expert review. Claude will structure the problem, extract relevant code with size tracking, and format everything within the 125KB token limit. See [Skills Included](#skills-included) for example prompts.
+Ask Claude to create consultation documents for external expert review. Claude will structure the problem, extract relevant code with size tracking, and format everything within the 125KB token limit. See [Skills Included](#agents--skills-included) for example prompts.
 
 ### Manual Code Extraction
 

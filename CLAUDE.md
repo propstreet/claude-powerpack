@@ -99,7 +99,7 @@ The plugin follows Claude Code's plugin specification:
 
 Skills activate based on their `description` field in SKILL.md frontmatter. Claude matches user requests against these descriptions to determine which skill to invoke.
 
-See [README.md - Skills Included](README.md#skills-included) for example prompts that trigger each skill.
+See [README.md - Agents & Skills Included](README.md#agents--skills-included) for example prompts that trigger each skill/agent.
 
 ### Code Extraction Script
 
