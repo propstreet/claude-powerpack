@@ -32,6 +32,16 @@ let WARNING_THRESHOLD_1 = Math.floor(MAX_SIZE_BYTES * 0.8);
 /** Warning threshold at ~92% of limit (very close to limit) */
 let WARNING_THRESHOLD_2 = Math.floor(MAX_SIZE_BYTES * 0.92);
 
+/**
+ * Update the size limit and recalculate warning thresholds.
+ * @param {number} kb - New limit in KB (must be positive integer)
+ */
+function setMaxSizeKB(kb) {
+  MAX_SIZE_BYTES = kb * 1024;
+  WARNING_THRESHOLD_1 = Math.floor(MAX_SIZE_BYTES * 0.8);
+  WARNING_THRESHOLD_2 = Math.floor(MAX_SIZE_BYTES * 0.92);
+}
+
 // ============================================================================
 // Custom Errors
 // ============================================================================
@@ -906,14 +916,12 @@ function main() {
 
   // Apply --max-size if provided
   if (args["max-size"]) {
-    const kb = parseInt(args["max-size"], 10);
-    if (isNaN(kb) || kb < 1) {
-      console.error(`❌ --max-size must be a positive integer (KB), got: ${args["max-size"]}`);
+    const raw = args["max-size"];
+    if (!/^\d+$/.test(raw) || parseInt(raw, 10) < 1) {
+      console.error(`❌ --max-size must be a positive integer (KB), got: ${raw}`);
       process.exit(1);
     }
-    MAX_SIZE_BYTES = kb * 1024;
-    WARNING_THRESHOLD_1 = Math.floor(MAX_SIZE_BYTES * 0.8);
-    WARNING_THRESHOLD_2 = Math.floor(MAX_SIZE_BYTES * 0.92);
+    setMaxSizeKB(parseInt(raw, 10));
   }
 
   // Handle config file mode
@@ -1156,12 +1164,12 @@ function processConfigFile(config, args) {
   let hasErrors = false;
 
   // Apply maxSize from config if not already set via CLI
-  if (!args["max-size"] && config.maxSize) {
-    const kb = parseInt(config.maxSize, 10);
-    if (!isNaN(kb) && kb >= 1) {
-      MAX_SIZE_BYTES = kb * 1024;
-      WARNING_THRESHOLD_1 = Math.floor(MAX_SIZE_BYTES * 0.8);
-      WARNING_THRESHOLD_2 = Math.floor(MAX_SIZE_BYTES * 0.92);
+  if (!args["max-size"] && config.maxSize != null) {
+    const raw = String(config.maxSize);
+    if (/^\d+$/.test(raw) && parseInt(raw, 10) >= 1) {
+      setMaxSizeKB(parseInt(raw, 10));
+    } else {
+      console.error(`⚠️  Invalid maxSize in config: ${config.maxSize} (must be positive integer KB, using default ${DEFAULT_MAX_SIZE_KB})`);
     }
   }
 
