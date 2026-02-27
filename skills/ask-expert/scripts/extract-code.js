@@ -3,7 +3,7 @@
  * Code Extractor for Expert Consultations
  *
  * Extracts file contents, line ranges, or git diffs with automatic size tracking
- * to stay within the 125 KB limit for expert consultation documents.
+ * to stay within configurable size limits for expert consultation documents.
  *
  * @author Propstreet
  * @license MIT
@@ -20,14 +20,17 @@ import { execFileSync } from "child_process";
 // Constants
 // ============================================================================
 
-/** Maximum size for expert consultation documents (125 KB) */
-const MAX_SIZE_BYTES = 125 * 1024;
+/** Default maximum size for expert consultation documents (125 KB) */
+const DEFAULT_MAX_SIZE_KB = 125;
 
-/** Warning threshold at 100 KB */
-const WARNING_THRESHOLD_1 = 100 * 1024;
+/** Maximum size in bytes (set from CLI --max-size or default) */
+let MAX_SIZE_BYTES = DEFAULT_MAX_SIZE_KB * 1024;
 
-/** Warning threshold at 115 KB (very close to limit) */
-const WARNING_THRESHOLD_2 = 115 * 1024;
+/** Warning threshold at ~80% of limit */
+let WARNING_THRESHOLD_1 = Math.floor(MAX_SIZE_BYTES * 0.8);
+
+/** Warning threshold at ~92% of limit (very close to limit) */
+let WARNING_THRESHOLD_2 = Math.floor(MAX_SIZE_BYTES * 0.92);
 
 // ============================================================================
 // Custom Errors
@@ -747,6 +750,7 @@ Arguments:
 Options:
   --help, -h           Show this help message
   --output, -o <file>  Write output to file (appends to existing file)
+  --max-size <KB>      Maximum output size in KB (default: ${DEFAULT_MAX_SIZE_KB})
   --track-size         Show size tracking and progress (requires --output)
   --section <header>   Add markdown section header before next file
                        Can be used multiple times for different files
@@ -841,7 +845,8 @@ Notes:
   • Supports 20+ file types (cs, js, ts, vue, py, etc.)
   • Error messages go to stderr, formatted output to stdout
   • --output mode always appends (matches >> behavior)
-  • Size tracking shows warnings at 100KB, 115KB, errors at 125KB
+  • Size tracking shows warnings at 80% and 92%, errors at limit
+  • Default size limit is ${DEFAULT_MAX_SIZE_KB}KB, override with --max-size
   • Section headers apply to the immediately following file only
   • Diff mode requires git repository and valid refs
   • Diff output uses unified diff format (standard git diff)
@@ -856,6 +861,9 @@ function main() {
     help: {
       type: "boolean",
       short: "h",
+    },
+    "max-size": {
+      type: "string",
     },
     "track-size": {
       type: "boolean",
@@ -894,6 +902,18 @@ function main() {
   if (args.help) {
     showHelp();
     process.exit(0);
+  }
+
+  // Apply --max-size if provided
+  if (args["max-size"]) {
+    const kb = parseInt(args["max-size"], 10);
+    if (isNaN(kb) || kb < 1) {
+      console.error(`❌ --max-size must be a positive integer (KB), got: ${args["max-size"]}`);
+      process.exit(1);
+    }
+    MAX_SIZE_BYTES = kb * 1024;
+    WARNING_THRESHOLD_1 = Math.floor(MAX_SIZE_BYTES * 0.8);
+    WARNING_THRESHOLD_2 = Math.floor(MAX_SIZE_BYTES * 0.92);
   }
 
   // Handle config file mode
@@ -1134,6 +1154,16 @@ function main() {
  */
 function processConfigFile(config, args) {
   let hasErrors = false;
+
+  // Apply maxSize from config if not already set via CLI
+  if (!args["max-size"] && config.maxSize) {
+    const kb = parseInt(config.maxSize, 10);
+    if (!isNaN(kb) && kb >= 1) {
+      MAX_SIZE_BYTES = kb * 1024;
+      WARNING_THRESHOLD_1 = Math.floor(MAX_SIZE_BYTES * 0.8);
+      WARNING_THRESHOLD_2 = Math.floor(MAX_SIZE_BYTES * 0.92);
+    }
+  }
 
   // Use output from config or args
   const outputFile = args.output || config.output;
