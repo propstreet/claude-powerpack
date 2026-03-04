@@ -16,7 +16,7 @@ Skills (alphabetical):
 - **[debrief](skills/debrief/SKILL.md)** - Captures session learnings and updates project docs with progressive disclosure
 - **[deep-interview](skills/deep-interview/SKILL.md)** - Structured requirements gathering via AskUserQuestion
 - **[mine-history](skills/mine-history/SKILL.md)** - Extracts learnings from all past session transcripts via pattern-based correction detection
-- **[simplify](skills/simplify/SKILL.md)** - Pre-merge PR cleanup: trims accumulated cruft and over-engineering
+- **[trim-pr](skills/trim-pr/SKILL.md)** - Pre-merge PR cleanup: trims accumulated cruft and over-engineering
 - **[update-pr](skills/update-pr/SKILL.md)** - Creates comprehensive PR descriptions by systematically reviewing all changes
 
 ## Repository Structure

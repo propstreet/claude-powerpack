@@ -3,7 +3,7 @@
 > Essential productivity tools for Claude Code: deep codebase analysis agent, expert consultation docs, code extraction, PR workflows, and more
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.7.2-green.svg)](https://github.com/propstreet/claude-powerpack/releases)
+[![Version](https://img.shields.io/badge/version-1.8.0-green.svg)](https://github.com/propstreet/claude-powerpack/releases)
 
 ## Features
 
@@ -37,7 +37,7 @@ Structured requirements gathering via interactive interviews:
 - **PRD Generation**: Auto-generates PRD with decision log and implementation checklist
 - **Best Practices**: Multi-select questions, tradeoff presentation, stakeholder probing
 
-### Simplify Skill
+### Trim PR Skill
 
 Pre-merge PR cleanup to trim accumulated complexity:
 
@@ -112,9 +112,9 @@ Run at the end of a session to capture learnings. Claude reviews the conversatio
 
 Ask Claude to interview you about a feature before implementation. Claude will research context, ask structured questions, and generate a PRD. See [Skills Included](#agents--skills-included) for example prompts.
 
-### Simplify Skill
+### Trim PR Skill
 
-Ask Claude to simplify your PR before merging. Claude will identify accumulated cruft, over-engineering, and suggest cleanups with risk ratings. See [Skills Included](#agents--skills-included) for example prompts.
+Ask Claude to trim your PR before merging. Claude will identify accumulated cruft, over-engineering, and suggest cleanups with risk ratings. See [Skills Included](#agents--skills-included) for example prompts.
 
 ### Update PR Skill
 
@@ -194,8 +194,8 @@ Team members who trust the repository folder will automatically have the plugin 
 ### Deep Interview Skill
 - **[SKILL.md](skills/deep-interview/SKILL.md)** - Complete interview workflow
 
-### Simplify Skill
-- **[SKILL.md](skills/simplify/SKILL.md)** - Complete cleanup workflow
+### Trim PR Skill
+- **[SKILL.md](skills/trim-pr/SKILL.md)** - Complete cleanup workflow
 
 ### Update PR Skill
 - **[SKILL.md](skills/update-pr/SKILL.md)** - Complete workflow for Claude
@@ -267,11 +267,11 @@ Team members who trust the repository folder will automatically have the plugin 
 
 **Allowed tools:** Bash(git, gh), Read, Glob, Grep, AskUserQuestion, Write, Task
 
-### simplify (v1.4.0)
+### trim-pr (v1.4.0)
 
 **Example prompts:**
 ```
-"Simplify this PR before merging"
+"Trim this PR before merging"
 "Clean up the accumulated cruft in this branch"
 "Check for over-engineering before I merge"
 "Review this PR for unnecessary complexity"
