@@ -1,6 +1,6 @@
 ---
-name: simplify
-description: Simplify a PR before merging - trim complexity that accumulated during development. Use when preparing to merge, cleaning up code, or reviewing for unnecessary complexity.
+name: trim-pr
+description: Trim a PR before merging - remove complexity that accumulated during development. Use when preparing to merge, cleaning up code, trimming unnecessary complexity, or asked to simplify a PR.
 user-invocable: true
 context: fork
 allowed-tools:
