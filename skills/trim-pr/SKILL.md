@@ -1,6 +1,6 @@
 ---
 name: trim-pr
-description: Trim a PR before merging - remove complexity that accumulated during development. Use when preparing to merge, cleaning up code, trimming unnecessary complexity, or asked to "trim PR".
+description: Trim a PR before merging - remove complexity that accumulated during development. Use when preparing to merge, cleaning up code, trimming unnecessary complexity, or asked to simplify a PR.
 user-invocable: true
 context: fork
 allowed-tools:

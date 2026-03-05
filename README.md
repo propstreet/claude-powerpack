@@ -267,7 +267,7 @@ Team members who trust the repository folder will automatically have the plugin 
 
 **Allowed tools:** Bash(git, gh), Read, Glob, Grep, AskUserQuestion, Write, Task
 
-### trim-pr (v1.4.0)
+### trim-pr (introduced as simplify in v1.4.0, renamed in v1.8.0)
 
 **Example prompts:**
 ```
