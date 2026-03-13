@@ -3,7 +3,7 @@
 > Essential productivity tools for Claude Code: deep codebase analysis agent, expert consultation docs, code extraction, PR workflows, and more
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.8.0-green.svg)](https://github.com/propstreet/claude-powerpack/releases)
+[![Version](https://img.shields.io/badge/version-1.8.1-green.svg)](https://github.com/propstreet/claude-powerpack/releases)
 
 ## Features
 
@@ -25,6 +25,7 @@ End-of-session learning capture with progressive disclosure:
 - **Session Analysis**: Scans conversation for mistakes, corrections, discoveries, and decisions
 - **Doc Audit**: Checks CLAUDE.md, .claude/rules/, and project docs to avoid duplicates
 - **Progressive Disclosure**: High-signal one-liners to CLAUDE.md, detailed knowledge to .claude/rules/
+- **Stale Entry Pruning**: Identifies entries duplicated by docs, enforced by toolchain, outdated, or left as session debris
 - **Token Discipline**: Enforces CLAUDE.md under 300 lines, routes domain knowledge to scoped rules
 - **User Approval**: Presents all proposed changes before writing anything
 

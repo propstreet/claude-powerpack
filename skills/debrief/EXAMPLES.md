@@ -66,6 +66,40 @@ paths:
 - Auth header required even for "public" endpoints (passes through user context if available)
 ```
 
+## Pruning Example
+
+After a session where the user discovered an important IExceptionHandler gotcha. CLAUDE.md is at 289 lines.
+
+### Good Pruning (Evidence-Based)
+
+```markdown
+## Session Debrief: Proposed Updates
+
+### 1. CLAUDE.md (289 → 285 lines, net -4)
+
+**Removals (pruned):**
+- **Remove line 142**: "Use X pattern for service registration" — now documented in docs/SERVICES.md (referenced on line 12)
+- **Remove lines 87-88**: "Run prettier before committing" — enforced by pre-commit hook in .husky/pre-commit
+- **Remove line 201**: "Always validate API input" — enforced by eslint-plugin-zod rule in .eslintrc
+
+**Additions:**
+- **Add to Common Mistakes**: "IExceptionHandler requires `services.AddExceptionHandler()` AND `app.UseExceptionHandler()` — missing either silently falls back to default handler (see src/Program.cs:42)"
+
+### 2. Skipped
+- [Debugging steps for test failure] — session-specific, not generalizable
+```
+
+### Bad Pruning (Avoid)
+
+```markdown
+**Removals:**
+- **Remove line 55**: "Use pnpm not npm" — seems redundant (NO EVIDENCE — "seems" is not proof)
+- **Remove line 120**: "Never deploy on Fridays" — we haven't had a Friday deploy issue lately (STILL VALID — absence of incidents proves the rule works)
+- **Remove line 89**: "Check migration order before merging" — I think CI catches this (UNCERTAIN — "I think" requires verification)
+```
+
+**Key difference:** Good pruning cites the specific file, linter rule, or doc that replaces each entry. Bad pruning uses weasel words like "seems", "I think", or "probably".
+
 ## Routing Decision Guide
 
 | Learning | Where it goes | Why |

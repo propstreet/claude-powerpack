@@ -1,6 +1,6 @@
 {
   "name": "claude-powerpack",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "description": "Essential productivity tools for Claude Code: deep codebase analysis agent, expert consultation docs, code extraction, PR workflows, and more",
   "author": {
     "name": "Propstreet",

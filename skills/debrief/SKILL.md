@@ -80,6 +80,27 @@ For each learning, check:
 - Does it contradict existing docs? → Propose update to existing entry
 - Is it genuinely new? → Propose addition
 
+## Phase 2.5: Prune Stale Entries
+
+**Activates when BOTH conditions are true:**
+- CLAUDE.md is above 250 lines
+- Phase 1 found high-signal learnings that warrant CLAUDE.md addition
+
+Scan CLAUDE.md for entries that no longer earn their place:
+
+| Category | How to verify |
+|----------|--------------|
+| Duplicated by docs | Entry restates guidance in a docs/*.md file that CLAUDE.md already references |
+| Enforced by toolchain | Linter, ast-grep, CI, or pre-commit hook already catches this (check config files) |
+| Outdated | Convention no longer matches codebase (verify with grep/glob) |
+| Session debris | Ephemeral context from a past session that was never cleaned up |
+
+**Rules:**
+- Require evidence for every removal — cite the doc, linter rule, or grep result that proves staleness
+- When uncertain, keep the entry — false removals are worse than bloat
+- Never prune architectural decisions or safety-critical rules without explicit user confirmation
+- Present removals in Phase 3 alongside additions so the user sees the full picture
+
 ## Phase 3: Propose Updates
 
 Present ALL proposed changes to the user in a single summary before writing anything.
@@ -89,8 +110,13 @@ Present ALL proposed changes to the user in a single summary before writing anyt
 ```markdown
 ## Session Debrief: Proposed Updates
 
-### 1. CLAUDE.md (line count: current → projected)
-- **Add**: "Never use `foo()` directly — always wrap with `safeFoo()` (see src/utils.ts:42)"
+### 1. CLAUDE.md (289 → 285 lines, net -4)
+**Removals (pruned):**
+- **Remove line 142**: "Use X pattern" — now documented in docs/SERVICES.md (referenced on line 12)
+- **Remove line 87**: "Run prettier before committing" — enforced by pre-commit hook in .husky/pre-commit
+
+**Additions:**
+- **Add**: "IExceptionHandler gotcha: need both AddExceptionHandler() and UseExceptionHandler() (see src/Program.cs:42)"
 - **Update**: Change "Use npm" → "Use pnpm (npm causes lockfile conflicts)"
 
 ### 2. .claude/rules/api-conventions.md (new file)
@@ -109,7 +135,7 @@ Present ALL proposed changes to the user in a single summary before writing anyt
 
 These rules are non-negotiable when proposing CLAUDE.md changes:
 
-1. **Under 300 lines** — If already near limit, route to .claude/rules/ instead
+1. **Under 300 lines** — If above 250, trigger Phase 2.5 pruning before routing to .claude/rules/
 2. **Earn its place** — Ask: "Would removing this cause Claude to make mistakes in future sessions?" If no, don't add it.
 3. **One-liners only** — Brief, actionable. No paragraphs.
 4. **No inline code blocks** — Use file:line references (e.g., `see src/config.ts:15-20`)
@@ -171,6 +197,7 @@ After applying changes:
 
 | File | Change | Lines |
 |------|--------|-------|
+| CLAUDE.md | Removed stale "Use X pattern" entry | -1 |
 | CLAUDE.md | Added gotcha about `safeFoo()` | +1 |
 | .claude/rules/api-conventions.md | Created with zod validation rule | +8 |
 | CONTRIBUTING.md | Added integration test note | +2 |
@@ -191,10 +218,8 @@ After applying changes:
 ### No CLAUDE.md exists
 Create a minimal one with the project name and the first learning. Suggest the user flesh it out.
 
-### CLAUDE.md is already at 300+ lines
-Do NOT add to it. Instead:
-- Route all learnings to .claude/rules/ files
-- Suggest the user run a separate cleanup to trim CLAUDE.md (extract sections to .claude/rules/)
+### CLAUDE.md is above 250 lines
+Trigger Phase 2.5 pruning first. If pruning frees enough space, propose additions alongside removals with a net line delta. Only fall back to routing all learnings to .claude/rules/ if pruning cannot free sufficient space.
 
 ### .claude/rules/ directory doesn't exist
 Create it with the first rule file. Explain the progressive disclosure pattern to the user.

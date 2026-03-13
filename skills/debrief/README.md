@@ -6,8 +6,9 @@ Capture session learnings and persist them into project documentation. Run at th
 
 1. **Reviews the session** for mistakes, corrections, discoveries, and decisions
 2. **Audits existing docs** to avoid duplicates and find the right placement
-3. **Proposes targeted updates** with progressive disclosure (pithy CLAUDE.md + detailed .claude/rules/)
-4. **Applies with approval** — nothing is written without your say-so
+3. **Prunes stale entries** when CLAUDE.md is above 250 lines (duplicated by docs, enforced by toolchain, outdated, or session debris)
+4. **Proposes targeted updates** with progressive disclosure (pithy CLAUDE.md + detailed .claude/rules/)
+5. **Applies with approval** — nothing is written without your say-so
 
 ## Example Prompts
 
