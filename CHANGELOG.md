@@ -5,6 +5,19 @@ All notable changes to Claude Powerpack will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0] - 2026-03-16
+
+### Added
+
+#### Analyze Dependencies Skill
+- New skill for dependency update changelog analysis with actionable recommendations
+- **Multi-mode operation**: preflight (research before updating), post-update (analyze git diff), or specific package version research
+- **Ecosystem support**: npm (via `package.json`) and NuGet (via `Directory.Packages.props` / `*.csproj`) with auto-detection
+- **Multi-source research pipeline**: Context7 MCP → GitHub Releases API → WebSearch → WebFetch, with parallel subagent dispatch for >5 packages
+- **Codebase cross-referencing**: greps for actual usage of deprecated/changed APIs, identifies files affected by breaking changes
+- **Structured report**: breaking changes, new features worth adopting, performance improvements, deprecation warnings, security fixes, and prioritized recommendations (quick wins / planned work / watch list)
+- **Scoped analysis**: `frontend` or `backend` argument to limit to one ecosystem
+
 ## [1.8.1] - 2026-03-13
 
 ### Added
@@ -220,6 +233,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CLAUDE.md, CONTRIBUTING.md, and comprehensive skill documentation
 - Installation instructions and troubleshooting guide
 
+[1.9.0]: https://github.com/propstreet/claude-powerpack/releases/tag/v1.9.0
 [1.8.1]: https://github.com/propstreet/claude-powerpack/releases/tag/v1.8.1
 [1.8.0]: https://github.com/propstreet/claude-powerpack/releases/tag/v1.8.0
 [1.7.2]: https://github.com/propstreet/claude-powerpack/releases/tag/v1.7.2
