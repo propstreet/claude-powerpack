@@ -12,6 +12,7 @@ Agents:
 
 Skills (alphabetical):
 
+- **[analyze-deps](skills/analyze-deps/SKILL.md)** - Analyzes dependency updates with breaking changes, new features, and actionable recommendations
 - **[ask-expert](skills/ask-expert/SKILL.md)** - Extracts code with size tracking for external expert consultation
 - **[debrief](skills/debrief/SKILL.md)** - Captures session learnings and updates project docs with progressive disclosure
 - **[deep-interview](skills/deep-interview/SKILL.md)** - Structured requirements gathering via AskUserQuestion

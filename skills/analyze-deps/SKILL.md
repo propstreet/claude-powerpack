@@ -1,6 +1,6 @@
 ---
 name: analyze-deps
-description: Analyze dependency updates and generate a changelog report with breaking changes, new features, and actionable recommendations. Use after updating packages, before planned upgrades (preflight), or to research what changed between specific versions. Triggers on "analyze deps", "changelog", "what changed in", "breaking changes", "dependency report".
+description: Analyze dependency updates and generate a changelog report with breaking changes, new features, and actionable recommendations. Use after updating packages, before planned upgrades (preflight), or to research what changed between specific versions. Triggers on "analyze deps", "dependency changelog", "what changed in {package}", "breaking changes in update", "dependency report".
 argument-hint: "[preflight] [frontend|backend] or [package from to]"
 user-invocable: true
 context: fork
@@ -62,7 +62,7 @@ $ARGUMENTS
 ls package.json 2>/dev/null
 
 # NuGet project?
-ls Directory.Packages.props 2>/dev/null || find . -name "*.csproj" -maxdepth 3 2>/dev/null | head -1
+ls Directory.Packages.props 2>/dev/null || find . -maxdepth 3 -name "*.csproj" 2>/dev/null | head -1
 ```
 
 ### Preflight mode — check what would be updated
@@ -75,9 +75,12 @@ ncu --packageFile package.json 2>/dev/null || npm outdated 2>/dev/null
 
 **NuGet:**
 ```bash
-# Find solution file
-SLN=$(find . -name "*.sln" -maxdepth 2 | head -1)
-dotnet list "$SLN" package --outdated 2>/dev/null
+# Find solution or project file
+SLN=$(find . -maxdepth 2 -name "*.sln" | head -1)
+if [ -z "$SLN" ]; then
+  SLN=$(find . -maxdepth 3 -name "*.csproj" | head -1)
+fi
+[ -n "$SLN" ] && dotnet list "$SLN" package --outdated
 ```
 
 Build change list: `{package, currentVersion, latestVersion, ecosystem}`.
@@ -85,15 +88,15 @@ Build change list: `{package, currentVersion, latestVersion, ecosystem}`.
 ### Post-update mode — detect what already changed
 
 ```bash
-# Check uncommitted changes
+# Check uncommitted changes (npm + NuGet)
 git diff HEAD -- '**/package.json' ':!node_modules'
-git diff HEAD -- '**/Directory.Packages.props'
+git diff HEAD -- '**/Directory.Packages.props' '**/*.csproj'
 ```
 
 If no uncommitted changes, check recent commits:
 
 ```bash
-git log --oneline -10 --diff-filter=M -- '**/package.json' '**/Directory.Packages.props'
+git log --oneline -10 --diff-filter=M -- '**/package.json' '**/Directory.Packages.props' '**/*.csproj'
 ```
 
 ### Specific package mode
@@ -105,9 +108,12 @@ Use the package name and version range from arguments directly.
 For each changed dependency, fetch release notes using these sources **in priority order**:
 
 1. **Context7 MCP** (if available) — `resolve-library-id` → `query-docs` with topics: `"what's new in {version}"`, `"breaking changes"`, `"migration guide"`
-2. **GitHub Releases API** — for npm packages, get repo URL from `npm view {package} repository.url`, then:
+2. **GitHub Releases API** — for npm packages, get repo URL from `npm view {package} repository.url` (strip `git+` prefix and `.git` suffix), then try tag variants:
    ```bash
-   gh api repos/{owner}/{repo}/releases --jq '[.[] | select(.tag_name | test("{version}"))] | .[0].body'
+   # Try exact tag first, then with v prefix
+   gh api repos/{owner}/{repo}/releases/tags/{version} --jq '.body' 2>/dev/null || \
+   gh api repos/{owner}/{repo}/releases/tags/v{version} --jq '.body' 2>/dev/null || \
+   gh api repos/{owner}/{repo}/releases --jq '.[0:5] | .[] | .tag_name + ": " + (.body | split("\n")[0])'
    ```
 3. **WebSearch** — `"{package} {newVersion} release notes changelog"`
 4. **WebFetch** — CHANGELOG.md or release page from search results
@@ -129,7 +135,7 @@ For each changed dependency, fetch release notes using these sources **in priori
 For breaking changes and deprecations, grep the codebase to check actual impact:
 
 ```bash
-grep -r "deprecatedApiName" --include="*.cs" --include="*.ts" --include="*.vue" --include="*.js" --include="*.tsx" --include="*.jsx"
+grep -r "deprecatedApiName" . --include="*.cs" --include="*.ts" --include="*.vue" --include="*.js" --include="*.tsx" --include="*.jsx" --exclude-dir=node_modules --exclude-dir=bin --exclude-dir=obj
 ```
 
 For new features, identify where in the project they could apply and estimate impact.
@@ -188,5 +194,3 @@ For new features, identify where in the project they could apply and estimate im
 - **Skip noise** — don't list every patch bump, focus on what matters
 
 ---
-
-$ARGUMENTS

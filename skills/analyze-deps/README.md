@@ -25,7 +25,8 @@ Future versions may add support for pip, cargo, go modules, and other ecosystems
 |------|---------|-------------|
 | Post-update | `/analyze-deps` | Analyze changes already applied (git diff) |
 | Preflight | `/analyze-deps preflight` | Research what's outdated before updating |
-| Scoped | `/analyze-deps frontend` | Limit to npm or NuGet |
+| Scoped (npm) | `/analyze-deps frontend` | npm packages only |
+| Scoped (NuGet) | `/analyze-deps backend` | NuGet packages only |
 | Specific | `/analyze-deps vue 3.5 to 3.6` | Research a single package |
 
 ## Research Sources
