@@ -12,6 +12,7 @@ Agents:
 
 Skills (alphabetical):
 
+- **[analyze-deps](skills/analyze-deps/SKILL.md)** - Analyzes dependency updates with breaking changes, new features, and actionable recommendations
 - **[ask-expert](skills/ask-expert/SKILL.md)** - Extracts code with size tracking for external expert consultation
 - **[debrief](skills/debrief/SKILL.md)** - Captures session learnings and updates project docs with progressive disclosure
 - **[deep-interview](skills/deep-interview/SKILL.md)** - Structured requirements gathering via AskUserQuestion
@@ -143,6 +144,7 @@ context: fork
 - **user-invocable** is the correct spelling (`user-invocable` with c, NOT `user-invokable` with k — VS Code extension has a known bug [#23723](https://github.com/anthropics/claude-code/issues/23723))
 - **context: fork** runs skill in isolated sub-agent — but forked skills have NO conversation history and CANNOT use AskUserQuestion. Skills needing either must omit `context: fork`.
 - **Additional frontmatter fields**: `argument-hint` (autocomplete hint), `model` (per-skill model override), `hooks` (scoped hooks), `agent` (subagent type for forked skills)
+- **Agent tool** replaced `Task` in Claude Code 2.1.63. Use `Agent` in `allowed-tools` for spawning sub-agents. `Task` still works as a backward-compatible alias but should not be used in new code.
 - **Glob tool** does not support brace expansion `{A,B}*.md` — use separate Glob patterns instead
 - Keep SKILL.md under 500 lines (move detailed examples to EXAMPLES.md)
 

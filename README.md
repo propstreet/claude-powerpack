@@ -3,7 +3,7 @@
 > Essential productivity tools for Claude Code: deep codebase analysis agent, expert consultation docs, code extraction, PR workflows, and more
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.8.1-green.svg)](https://github.com/propstreet/claude-powerpack/releases)
+[![Version](https://img.shields.io/badge/version-1.9.0-green.svg)](https://github.com/propstreet/claude-powerpack/releases)
 
 ## Features
 
@@ -56,6 +56,16 @@ Create comprehensive PR descriptions that document every meaningful change:
 - **Structured Output**: Organized sections for user impact and technical details
 - **GitHub Integration**: Updates PR via `gh pr edit`
 
+### Analyze Dependencies Skill
+
+Changelog analysis for dependency updates with actionable recommendations:
+
+- **Multi-Mode**: Preflight (before updating), post-update (after), or specific package research
+- **Ecosystem Support**: npm and NuGet (auto-detected from project files)
+- **Multi-Source Research**: Context7, GitHub Releases API, WebSearch, WebFetch
+- **Codebase Cross-Reference**: Greps for actual usage of deprecated/changed APIs
+- **Structured Report**: Breaking changes, new features, deprecations, security fixes, recommendations
+
 ### Ask Expert Skill
 
 Create comprehensive technical consultation documents for external expert review:
@@ -103,7 +113,7 @@ You should see `claude-powerpack` in the list of installed plugins.
 
 ### Code Researcher Agent
 
-The code-researcher agent activates when Claude Code spawns a sub-agent for deep codebase analysis. It's used automatically by the Task tool when research questions match its description. See [Skills Included](#agents--skills-included) for example prompts.
+The code-researcher agent activates when Claude Code spawns a sub-agent for deep codebase analysis. It's used automatically by the Agent tool when research questions match its description. See [Skills Included](#agents--skills-included) for example prompts.
 
 ### Debrief Skill
 
@@ -120,6 +130,10 @@ Ask Claude to trim your PR before merging. Claude will identify accumulated cruf
 ### Update PR Skill
 
 Ask Claude to update or prepare a PR description. Claude will systematically inventory all changes, categorize them, and create a structured summary. See [Skills Included](#agents--skills-included) for example prompts.
+
+### Analyze Dependencies Skill
+
+Ask Claude to analyze dependency updates or run a preflight check before upgrading. Claude researches changelogs, cross-references your codebase, and generates a structured report. See [Skills Included](#agents--skills-included) for example prompts.
 
 ### Ask Expert Skill
 
@@ -203,6 +217,10 @@ Team members who trust the repository folder will automatically have the plugin 
 - **[EXAMPLES.md](skills/update-pr/EXAMPLES.md)** - Good vs bad PR examples
 - **[README](skills/update-pr/README.md)** - Quick reference
 
+### Analyze Dependencies Skill
+- **[SKILL.md](skills/analyze-deps/SKILL.md)** - Complete analysis workflow
+- **[README](skills/analyze-deps/README.md)** - Quick reference
+
 ### Ask Expert Skill
 - **[SKILL.md](skills/ask-expert/SKILL.md)** - Complete workflow for Claude
 - **[EXAMPLES.md](skills/ask-expert/EXAMPLES.md)** - Usage patterns and workflows
@@ -266,7 +284,7 @@ Team members who trust the repository folder will automatically have the plugin 
 - Generates PRD with decision log and implementation checklist
 - Probes for existing patterns and stakeholder knowledge
 
-**Allowed tools:** Bash(git, gh), Read, Glob, Grep, AskUserQuestion, Write, Task
+**Allowed tools:** Bash(git, gh), Read, Glob, Grep, AskUserQuestion, Write, Agent
 
 ### trim-pr (introduced as simplify in v1.4.0, renamed in v1.8.0)
 
@@ -303,6 +321,26 @@ Team members who trust the repository folder will automatically have the plugin 
 - Saves to `/tmp/pr-summary.md` and updates PR via `gh pr edit`
 
 **Allowed tools:** Bash, Read, Write, Edit, Glob, Grep
+
+### analyze-deps (v1.9.0)
+
+**Example prompts:**
+```
+"Analyze what changed after the dependency update"
+"Run a preflight check before updating packages"
+"What breaking changes are in vue 3.5 to 3.6?"
+"Analyze deps for frontend only"
+```
+
+**What it does:**
+- Detects npm and NuGet ecosystems from project files
+- Preflight mode: checks what's outdated and researches before you update
+- Post-update mode: detects changes via git diff and analyzes changelogs
+- Fetches release notes from Context7, GitHub Releases, WebSearch
+- Cross-references breaking changes against your actual codebase usage
+- Generates structured report with recommendations
+
+**Allowed tools:** Bash(git, ncu, npm, dotnet, gh, ls, find), Read, Glob, Grep, Agent, WebSearch, WebFetch, Context7
 
 ### ask-expert (v1.0.0)
 

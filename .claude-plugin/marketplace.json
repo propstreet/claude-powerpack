@@ -5,13 +5,13 @@
     "url": "https://github.com/propstreet"
   },
   "description": "Essential productivity tools for Claude Code: deep codebase analysis agent, expert consultation docs, session learning extraction, PR workflows, and more",
-  "version": "1.8.1",
+  "version": "1.9.0",
   "plugins": [
     {
       "name": "claude-powerpack",
       "source": "./",
-      "description": "Productivity skills and agents for Claude Code: deep codebase analysis agent, expert consultation documents with code extraction, session history mining, PR trimming, deep interview for requirements gathering, end-of-session debrief, and comprehensive PR descriptions. Requires Node.js 18+.",
-      "version": "1.8.1",
+      "description": "Productivity skills and agents for Claude Code: deep codebase analysis agent, dependency update analysis, expert consultation documents with code extraction, session history mining, PR trimming, deep interview for requirements gathering, end-of-session debrief, and comprehensive PR descriptions. Requires Node.js 18+.",
+      "version": "1.9.0",
       "author": {
         "name": "Propstreet",
         "url": "https://github.com/propstreet"
@@ -32,7 +32,9 @@
         "session-learnings",
         "history-mining",
         "code-researcher",
-        "codebase-analysis"
+        "codebase-analysis",
+        "dependency-analysis",
+        "changelog"
       ]
     }
   ]
