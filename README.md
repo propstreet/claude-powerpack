@@ -340,7 +340,7 @@ Team members who trust the repository folder will automatically have the plugin 
 - Cross-references breaking changes against your actual codebase usage
 - Generates structured report with recommendations
 
-**Allowed tools:** Bash(git, ncu, npm, dotnet, gh, jq), Read, Glob, Grep, Agent, WebSearch, WebFetch, Context7
+**Allowed tools:** Bash(git, ncu, npm, dotnet, gh, ls, find), Read, Glob, Grep, Agent, WebSearch, WebFetch, Context7
 
 ### ask-expert (v1.0.0)
 
