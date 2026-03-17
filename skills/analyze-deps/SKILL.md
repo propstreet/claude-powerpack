@@ -42,7 +42,7 @@ This skill currently focuses on **npm** and **NuGet** projects. It detects which
 
 ## Mode
 
-Parse `$ARGUMENTS` to determine mode:
+Parse the user's arguments to determine mode:
 
 | Input | Mode | Behavior |
 |-------|------|----------|
@@ -53,7 +53,7 @@ Parse `$ARGUMENTS` to determine mode:
 | `frontend` / `backend` | Post-update (scoped) | Limit analysis to one ecosystem |
 | `vue 3.5 to 3.6` | Specific | Research a specific package version range |
 
-$ARGUMENTS
+**User arguments:** $ARGUMENTS
 
 ## Step 1: Detect Ecosystems and Changes
 
