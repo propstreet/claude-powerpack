@@ -1,6 +1,6 @@
 ---
 name: analyze-deps
-description: Analyze dependency updates and generate a changelog report with breaking changes, new features, and actionable recommendations. Use after updating packages, before planned upgrades (preflight), or to research what changed between specific versions. Triggers on "analyze deps", "dependency changelog", "what changed in", "breaking changes in update", "dependency report".
+description: Analyze dependency updates and generate a changelog report with breaking changes, new features, and actionable recommendations. Use after updating packages, before planned upgrades (preflight), or to research what changed between specific versions. Triggers on "analyze deps", "analyze dependencies", "dependency update report", "breaking changes in update", "what changed in dependency update".
 argument-hint: "[preflight] [frontend|backend] or [package from to]"
 user-invocable: true
 context: fork
@@ -18,7 +18,6 @@ allowed-tools:
   - Bash(dotnet list:*)
   # GitHub: fetch release notes
   - Bash(gh api:*)
-  - Bash(jq:*)
   # Utilities: ecosystem detection
   - Bash(ls:*)
   - Bash(find:*)
@@ -133,11 +132,7 @@ For each changed dependency, fetch release notes using these sources **in priori
 
 ## Step 3: Cross-Reference with Codebase
 
-For breaking changes and deprecations, grep the codebase to check actual impact:
-
-```bash
-grep -rn "deprecatedApiName" . --include="*.cs" --include="*.ts" --include="*.vue" --include="*.js" --include="*.tsx" --include="*.jsx" --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=bin --exclude-dir=obj --exclude-dir=dist --exclude-dir=build
-```
+For breaking changes and deprecations, use the **Grep** tool to search the codebase for actual usage of affected APIs. Search across relevant file types (`*.cs`, `*.ts`, `*.vue`, `*.js`, `*.tsx`, `*.jsx`) and note file paths and line numbers for the report.
 
 For new features, identify where in the project they could apply and estimate impact.
 
