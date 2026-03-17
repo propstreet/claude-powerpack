@@ -1,6 +1,6 @@
 ---
 name: analyze-deps
-description: Analyze dependency updates and generate a changelog report with breaking changes, new features, and actionable recommendations. Use after updating packages, before planned upgrades (preflight), or to research what changed between specific versions. Triggers on "analyze deps", "dependency changelog", "what changed in {package}", "breaking changes in update", "dependency report".
+description: Analyze dependency updates and generate a changelog report with breaking changes, new features, and actionable recommendations. Use after updating packages, before planned upgrades (preflight), or to research what changed between specific versions. Triggers on "analyze deps", "dependency changelog", "what changed in", "breaking changes in update", "dependency report".
 argument-hint: "[preflight] [frontend|backend] or [package from to]"
 user-invocable: true
 context: fork
@@ -19,6 +19,9 @@ allowed-tools:
   # GitHub: fetch release notes
   - Bash(gh api:*)
   - Bash(jq:*)
+  # Utilities: ecosystem detection
+  - Bash(ls:*)
+  - Bash(find:*)
   # File operations
   - Read
   - Glob
@@ -76,11 +79,9 @@ ncu --packageFile package.json 2>/dev/null || npm outdated 2>/dev/null
 **NuGet:**
 ```bash
 # Find solution or project file
-SLN=$(find . -maxdepth 2 -name "*.sln" | head -1)
-if [ -z "$SLN" ]; then
-  SLN=$(find . -maxdepth 3 -name "*.csproj" | head -1)
-fi
-[ -n "$SLN" ] && dotnet list "$SLN" package --outdated
+TARGET=$(find . -maxdepth 2 -name "*.sln" -print -quit 2>/dev/null)
+[ -z "$TARGET" ] && TARGET=$(find . -maxdepth 3 -name "*.csproj" -print -quit 2>/dev/null)
+[ -n "$TARGET" ] && dotnet list "$TARGET" package --outdated
 ```
 
 Build change list: `{package, currentVersion, latestVersion, ecosystem}`.
@@ -113,7 +114,7 @@ For each changed dependency, fetch release notes using these sources **in priori
    # Try exact tag first, then with v prefix
    gh api repos/{owner}/{repo}/releases/tags/{version} --jq '.body' 2>/dev/null || \
    gh api repos/{owner}/{repo}/releases/tags/v{version} --jq '.body' 2>/dev/null || \
-   gh api repos/{owner}/{repo}/releases --jq '.[0:5] | .[] | .tag_name + ": " + (.body | split("\n")[0])'
+   gh api repos/{owner}/{repo}/releases --jq '.[0:5] | .[] | .tag_name + ": " + ((.body // "") | split("\n")[0])'
    ```
 3. **WebSearch** — `"{package} {newVersion} release notes changelog"`
 4. **WebFetch** — CHANGELOG.md or release page from search results
@@ -135,7 +136,7 @@ For each changed dependency, fetch release notes using these sources **in priori
 For breaking changes and deprecations, grep the codebase to check actual impact:
 
 ```bash
-grep -r "deprecatedApiName" . --include="*.cs" --include="*.ts" --include="*.vue" --include="*.js" --include="*.tsx" --include="*.jsx" --exclude-dir=node_modules --exclude-dir=bin --exclude-dir=obj
+grep -rn "deprecatedApiName" . --include="*.cs" --include="*.ts" --include="*.vue" --include="*.js" --include="*.tsx" --include="*.jsx" --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=bin --exclude-dir=obj --exclude-dir=dist --exclude-dir=build
 ```
 
 For new features, identify where in the project they could apply and estimate impact.
