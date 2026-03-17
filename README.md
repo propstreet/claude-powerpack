@@ -113,7 +113,7 @@ You should see `claude-powerpack` in the list of installed plugins.
 
 ### Code Researcher Agent
 
-The code-researcher agent activates when Claude Code spawns a sub-agent for deep codebase analysis. It's used automatically by the Task tool when research questions match its description. See [Skills Included](#agents--skills-included) for example prompts.
+The code-researcher agent activates when Claude Code spawns a sub-agent for deep codebase analysis. It's used automatically by the Agent tool when research questions match its description. See [Skills Included](#agents--skills-included) for example prompts.
 
 ### Debrief Skill
 
@@ -284,7 +284,7 @@ Team members who trust the repository folder will automatically have the plugin 
 - Generates PRD with decision log and implementation checklist
 - Probes for existing patterns and stakeholder knowledge
 
-**Allowed tools:** Bash(git, gh), Read, Glob, Grep, AskUserQuestion, Write, Task
+**Allowed tools:** Bash(git, gh), Read, Glob, Grep, AskUserQuestion, Write, Agent
 
 ### trim-pr (introduced as simplify in v1.4.0, renamed in v1.8.0)
 

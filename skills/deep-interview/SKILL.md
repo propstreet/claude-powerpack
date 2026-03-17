@@ -19,7 +19,7 @@ allowed-tools:
   - Grep
   - AskUserQuestion
   - Write
-  - Task
+  - Agent
 ---
 
 # Deep Interview
@@ -70,7 +70,7 @@ A structured interview process for gathering requirements and making design deci
    ```
 
 3. **Explore current implementation:**
-   - Use Task tool with `subagent_type: Explore` to find relevant code
+   - Use Agent tool with `subagent_type: Explore` to find relevant code
    - Identify existing patterns that could be reused
    - Note gaps between documented plans and current state
 
