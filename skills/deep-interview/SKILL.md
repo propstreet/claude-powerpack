@@ -4,15 +4,9 @@ description: Start a structured interview to gather requirements for complex fea
 argument-hint: "<issue-number|prd-path|feature-description>"
 user-invocable: true
 allowed-tools:
-  # Git: read-only operations
-  - Bash(git log:*)
-  - Bash(git diff:*)
-  - Bash(git status)
-  - Bash(git show:*)
-  # GitHub CLI: read-only operations
-  - Bash(gh issue view:*)
-  - Bash(gh issue list:*)
-  - Bash(gh pr view:*)
+  # Git & GitHub CLI
+  - Bash(git:*)
+  - Bash(gh:*)
   # File operations
   - Read
   - Glob

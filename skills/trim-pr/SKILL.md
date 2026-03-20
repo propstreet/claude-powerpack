@@ -4,30 +4,22 @@ description: Trim a PR before merging - remove complexity that accumulated durin
 user-invocable: true
 context: fork
 allowed-tools:
-  # Git: read-only operations
-  - Bash(git log:*)
-  - Bash(git diff:*)
-  - Bash(git status)
-  - Bash(git show:*)
-  - Bash(git ls-files:*)
-  # GitHub CLI: read-only operations
-  - Bash(gh pr view:*)
-  - Bash(gh pr diff:*)
-  # Build/lint tools (for verification step)
-  - Bash(npm run lint:*)
-  - Bash(npm run build:*)
-  - Bash(npm run test:*)
-  - Bash(ruff check:*)
+  # Git & GitHub CLI (read-only)
+  - Bash(git:*)
+  - Bash(gh:*)
+  # Build/lint/test
+  - Bash(npm run:*)
+  - Bash(npx:*)
+  - Bash(ruff:*)
   - Bash(pylint:*)
   - Bash(go build:*)
   - Bash(go vet:*)
   - Bash(go test:*)
   - Bash(cargo check:*)
   - Bash(cargo test:*)
-  # .NET
   - Bash(dotnet build:*)
   - Bash(dotnet test:*)
-  - Bash(dotnet format --verify-no-changes:*)
+  - Bash(dotnet format:*)
   # File operations
   - Read
   - Edit
@@ -48,14 +40,23 @@ Trim complexity that accumulated during development. This is NOT a code review -
 
 ## 1. Understand the Changes
 
-Determine base branch and review scope:
+Determine base branch and review scope.
 
+**Important: Run commands separately — do NOT use `$()` command substitution, as it triggers permission prompts.**
+
+First, get the base branch:
 ```bash
-# Get base branch from PR, or fall back to default branch
-BASE_BRANCH=$(gh pr view --json baseRefName -q '.baseRefName' 2>/dev/null || \
-  git rev-parse --abbrev-ref origin/HEAD 2>/dev/null | sed 's#origin/##' || echo 'main')
+gh pr view --json baseRefName -q '.baseRefName'
+```
 
-git diff "$BASE_BRANCH"...HEAD --stat
+If no PR exists, fall back:
+```bash
+git rev-parse --abbrev-ref origin/HEAD
+```
+
+Then use that branch name in subsequent commands:
+```bash
+git diff <base-branch>...HEAD --stat
 ```
 
 Read key changed files to understand what was built.
@@ -171,7 +172,7 @@ After changes, run the project's standard checks based on project type:
 # Prefer ruff if available, fall back to pylint
 if [ -f pyproject.toml ] || [ -f setup.py ]; then
   command -v ruff >/dev/null && ruff check .
-  command -v pylint >/dev/null && pylint $(git ls-files '*.py')
+  command -v pylint >/dev/null && pylint .
 fi
 ```
 

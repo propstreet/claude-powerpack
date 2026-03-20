@@ -5,20 +5,14 @@ argument-hint: "[preflight] [frontend|backend] or [package from to]"
 user-invocable: true
 context: fork
 allowed-tools:
-  # Git: detect what changed
-  - Bash(git diff:*)
-  - Bash(git log:*)
-  - Bash(git status)
-  - Bash(git show:*)
-  # npm: check outdated, get repo URLs
+  # Git & GitHub CLI
+  - Bash(git:*)
+  - Bash(gh:*)
+  # Package managers
   - Bash(ncu:*)
-  - Bash(npm view:*)
-  - Bash(npm outdated:*)
-  # NuGet: check outdated
-  - Bash(dotnet list:*)
-  # GitHub: fetch release notes
-  - Bash(gh api:*)
-  # Utilities: ecosystem detection
+  - Bash(npm:*)
+  - Bash(dotnet:*)
+  # Utilities
   - Bash(ls:*)
   - Bash(find:*)
   # File operations

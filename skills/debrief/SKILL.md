@@ -3,12 +3,8 @@ name: debrief
 description: Capture session learnings and update project docs. Use when ending a session, after completing a feature, or when asked to "debrief", "capture learnings", "update project knowledge", or "what did we learn".
 user-invocable: true
 allowed-tools:
-  # Git: read-only operations
-  - Bash(git log:*)
-  - Bash(git diff:*)
-  - Bash(git status)
-  - Bash(git show:*)
-  - Bash(git ls-files:*)
+  # Git
+  - Bash(git:*)
   # File operations
   - Read
   - Edit

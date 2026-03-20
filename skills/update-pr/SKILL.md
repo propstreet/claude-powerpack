@@ -7,17 +7,9 @@ allowed-tools:
   - Edit
   - Glob
   - Grep
-  # GitHub CLI: PR operations (edit is intentional - core skill purpose)
-  - Bash(gh pr view:*)
-  - Bash(gh pr edit:*)
-  - Bash(gh pr status:*)
-  - Bash(gh pr diff:*)
-  # Git: read-only operations
-  - Bash(git log:*)
-  - Bash(git diff:*)
-  - Bash(git status)
-  - Bash(git show:*)
-  - Bash(git rev-parse:*)
+  # Git & GitHub CLI
+  - Bash(git:*)
+  - Bash(gh:*)
 user-invocable: true
 context: fork
 ---

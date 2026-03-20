@@ -5,14 +5,11 @@ allowed-tools:
   - Read
   - Write
   - Edit
-  # Node: only for running the extraction script
-  - Bash(node:*scripts/extract-code.js*)
-  # Git: read-only operations for code extraction
-  - Bash(git diff:*)
-  - Bash(git show:*)
-  - Bash(git log:*)
-  - Bash(git status)
-  # Utilities for document creation and size tracking
+  # Git
+  - Bash(git:*)
+  # Node: extraction script
+  - Bash(node:*)
+  # Utilities
   - Bash(cat:*)
   - Bash(wc:*)
   - Bash(ls:*)
