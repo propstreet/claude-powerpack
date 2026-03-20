@@ -5,14 +5,8 @@ allowed-tools:
   - Read
   - Write
   - Edit
-  # Node: only for running the extraction script
-  - Bash(node:*scripts/extract-code.js*)
-  # Git: read-only operations for code extraction
-  - Bash(git diff:*)
-  - Bash(git show:*)
-  - Bash(git log:*)
-  - Bash(git status)
-  # Utilities for document creation and size tracking
+  - Bash(git:*)
+  - Bash(node:*)
   - Bash(cat:*)
   - Bash(wc:*)
   - Bash(ls:*)
@@ -26,59 +20,31 @@ Create comprehensive technical consultation documents by extracting code, diffs,
 
 ## Document Structure
 
-Follow this proven structure:
-
 ### Part 1: Problem Context (~15-25 KB)
-1. **Problem** - Issue, errors, test failures
-2. **Our Solution** - What was implemented and why
-3. **Concerns** - Code smells, coupling, architectural questions
-4. **Alternatives** - Other approaches, trade-offs
+1. **Problem** — Issue, errors, test failures
+2. **Our Solution** — What was implemented and why
+3. **Concerns** — Code smells, coupling, architectural questions
+4. **Alternatives** — Other approaches, trade-offs
 
 ### Part 2: Complete Architecture (~60-90 KB)
-5. **Architecture Overview** - ASCII diagram, data flow, patterns
-6. **Components** - Frontend, tests, controllers
-7. **Services** - Implementation and interfaces
-8. **Models** - Domain entities with relationships
+5. **Architecture Overview** — ASCII diagram, data flow, patterns
+6. **Components** — Frontend, tests, controllers
+7. **Services** — Implementation and interfaces
+8. **Models** — Domain entities with relationships
 
 ### Part 3: Expert Request (~5-10 KB)
-9. **Questions** - Specific technical questions
-10. **Success Criteria** - Requirements and priorities
+9. **Questions** — Specific technical questions
+10. **Success Criteria** — Requirements and priorities
 
 ## Workflow
 
 ### Step 1: Write Problem Context
 
-Create descriptive filename like `{topic}-consultation.md`:
-
-```bash
-cat > feature-consultation.md << 'EOF'
-# Expert Consultation: [Feature Name]
-
-## 1. Problem
-[Describe the issue]
-
-## 2. Our Solution
-[What was implemented]
-
-## 3. Concerns
-[Technical concerns]
-
-## 4. Alternatives
-[Other approaches considered]
-
-## 5. Architecture Overview
-[ASCII diagram]
-
----
-# Complete Architecture Context
-EOF
-```
+Create a descriptive file like `{topic}-consultation.md` with the problem context, your solution, concerns, alternatives, and an architecture overview.
 
 ### Step 2: Extract Code
 
-Use the bundled extraction script with size tracking.
-
-**💡 The script accepts multiple files in one call** - batch files for efficiency:
+Use the bundled extraction script with size tracking. The script accepts multiple files in one call — batch for efficiency.
 
 ```bash
 node scripts/extract-code.js \
@@ -95,50 +61,22 @@ node scripts/extract-code.js \
 - Git diff (per-file): `src/Service.cs:diff` or `src/Service.cs:diff=master..HEAD`
 
 **Git diff options (all changes):**
-- Staged changes: `--staged` (equivalent to `git diff --cached`)
-- Commit changes: `--commit=abc123` or `--commit=HEAD~1` (equivalent to `git show`)
+- Staged changes: `--staged`
+- Commit changes: `--commit=abc123` or `--commit=HEAD~1`
 
 **Prefer FULL files over chunks** for better expert analysis. Use chunks only for very large files.
 
 ### Step 3: Add Expert Request
 
-```bash
-cat >> consultation.md << 'EOF'
-
----
-# Expert Guidance Request
-
-## Questions
-1. [Specific question about architecture]
-2. [Question about trade-offs]
-3. [Question about refactoring approach]
-
-## Success Criteria
-- [Required constraints]
-- [Priorities]
-
-**Please answer in English**
-EOF
-```
+Append the specific questions and success criteria to the document.
 
 ### Step 4: Verify Size
 
-```bash
-wc -c consultation.md  # Should be 100-125 KB
-```
-
-DO NOT read the full file back (exceeds context).
+Check the file size — it should be 100-125 KB. DO NOT read the full file back (exceeds context).
 
 ## Code Extraction Examples
 
 See [EXAMPLES.md](EXAMPLES.md) for detailed usage patterns.
-
-**Basic extraction:**
-```bash
-node scripts/extract-code.js \
-  --track-size --output=doc.md \
-  src/Component.vue tests/Component.test.ts
-```
 
 **With sections:**
 ```bash
@@ -156,25 +94,16 @@ node scripts/extract-code.js \
   --config=extraction-plan.json
 ```
 
-**Include staged or commit changes:**
+**Staged or commit changes:**
 ```bash
-# All staged changes
 node scripts/extract-code.js \
   --staged --track-size --output=doc.md
 
-# A specific commit
 node scripts/extract-code.js \
   --commit=abc123 --track-size --output=doc.md
-
-# Combine with file extraction
-node scripts/extract-code.js \
-  --staged --track-size --output=doc.md \
-  --section="Context" src/Service.cs
 ```
 
 ## Config File Format
-
-Create reusable extraction plans:
 
 ```json
 {
@@ -193,42 +122,6 @@ Create reusable extraction plans:
 }
 ```
 
-See `scripts/extract-code-example.json` for complete example.
-
-## Critical Rules
-
-- ✅ Use `--track-size` to stay within 125 KB
-- ✅ Batch multiple files in single command
-- ✅ Use absolute path to script from any directory
-- ✅ Include FULL files when possible
-- ✅ Add architecture diagrams
-- ✅ Include working AND failing tests
-- ❌ Don't read completed file back
-- ❌ Don't send only bug fix without context
-
-## Troubleshooting
-
-**Script not found:**
-```bash
-# Verify script exists
-ls scripts/extract-code.js
-
-# Show help
-node scripts/extract-code.js --help
-```
-
-**Git diff errors:**
-```bash
-git status              # Verify git repo
-git rev-parse master    # Verify branch exists
-```
-
-**Exceeding 125 KB:**
-- Use line ranges instead of full files for large services
-- Remove boilerplate and simple DTOs
-- Focus on core interfaces and modified code
-- Split into multiple consultations
-
 ## Code Inclusion Priority
 
 **Must include:**
@@ -242,3 +135,11 @@ git rev-parse master    # Verify branch exists
 - Boilerplate
 - Simple DTOs
 - Repetitive test setups
+
+## Gotchas
+
+- The 125KB limit is enforced by the extraction script — it warns at 100KB and 115KB, then exits at 125KB
+- Always use `--track-size` to stay within the limit
+- Don't read the completed document back into context — it's too large
+- The script appends to existing files, so you can build incrementally
+- Shell constructs like `$()` and variable assignments in Bash calls can trigger permission prompts. Prefer simple, single-command calls when possible.

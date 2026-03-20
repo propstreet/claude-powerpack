@@ -3,13 +3,7 @@ name: debrief
 description: Capture session learnings and update project docs. Use when ending a session, after completing a feature, or when asked to "debrief", "capture learnings", "update project knowledge", or "what did we learn".
 user-invocable: true
 allowed-tools:
-  # Git: read-only operations
-  - Bash(git log:*)
-  - Bash(git diff:*)
-  - Bash(git status)
-  - Bash(git show:*)
-  - Bash(git ls-files:*)
-  # File operations
+  - Bash(git:*)
   - Read
   - Edit
   - Write
@@ -21,13 +15,6 @@ allowed-tools:
 # Session Debrief
 
 Capture learnings from the current session and persist them into project documentation. The goal is continuous improvement: never repeat the same mistakes, always build on what we learn.
-
-## When to Use This Skill
-
-- End of a coding session (natural stopping point)
-- After completing a feature or fixing a complex bug
-- After a session with multiple corrections or discoveries
-- When the user says "debrief", "capture learnings", or "what did we learn"
 
 ## Phase 1: Review the Session
 
@@ -58,27 +45,14 @@ If the session had no meaningful learnings (simple task, everything went smoothl
 
 ## Phase 2: Audit Existing Documentation
 
-Before proposing changes, check what already exists:
-
-1. **Read CLAUDE.md** in the project root — understand its current structure and length
-2. **Scan .claude/rules/** for existing rule files:
-   ```
-   Glob: .claude/rules/**/*.md
-   ```
-3. **Check for project docs** that might be relevant:
-   ```
-   Glob: ARCHITECTURE*.md
-   Glob: CONTRIBUTING*.md
-   Glob: DEVELOPMENT*.md
-   Glob: docs/**/*.md
-   ```
-4. **Check CLAUDE.md for doc references** — Many repos document their docs structure in CLAUDE.md (e.g., `docs/API.md`, `docs/FRONTEND.md`). Scan for `@` imports and path references to discover project-specific documentation locations.
-5. **Estimate CLAUDE.md size** — Use the Read tool to check the file and note how many lines it has. Track against the 300-line budget.
+Before proposing changes, read CLAUDE.md, scan .claude/rules/ for existing rule files, and check for project docs (ARCHITECTURE.md, CONTRIBUTING.md, docs/). Follow any `@` imports and path references in CLAUDE.md to discover documentation locations.
 
 For each learning, check:
 - Is it already documented? → Skip
 - Does it contradict existing docs? → Propose update to existing entry
 - Is it genuinely new? → Propose addition
+
+Estimate CLAUDE.md line count and track against the 300-line budget.
 
 ## Phase 2.5: Prune Stale Entries
 
@@ -123,10 +97,7 @@ Present ALL proposed changes to the user in a single summary before writing anyt
 - **Add**: Path-scoped rule for `src/api/**/*.ts`
 - Content: "All API handlers must validate input with zod schemas before processing"
 
-### 3. CONTRIBUTING.md
-- **Add to Testing section**: "Run `npm run test:integration` separately — it requires a running database"
-
-### 4. Skipped
+### 3. Skipped
 - [Session-specific detail] — not generalizable
 - [Already documented in .claude/rules/testing.md]
 ```
@@ -140,19 +111,11 @@ These rules are non-negotiable when proposing CLAUDE.md changes:
 3. **One-liners only** — Brief, actionable. No paragraphs.
 4. **No inline code blocks** — Use file:line references (e.g., `see src/config.ts:15-20`)
 5. **Use @imports** for detailed docs — `@docs/api-patterns.md` not inline explanations
-6. **Route domain knowledge to .claude/rules/** — Path-scope when possible:
-   ```yaml
-   ---
-   paths:
-     - "src/api/**/*.ts"
-   ---
-   ```
+6. **Route domain knowledge to .claude/rules/** — Path-scope when possible
 7. **Prefer updating over adding** — Extend an existing bullet point rather than adding a new one
 8. **Never duplicate linter rules** — If ESLint/Prettier/Ruff enforces it, don't document it
 
 ### .claude/rules/ Best Practices
-
-When creating or updating rule files:
 
 - **One topic per file** — `api-conventions.md`, `testing.md`, `debugging.md`
 - **Use path-scoping** when the rule only applies to certain files
@@ -161,17 +124,15 @@ When creating or updating rule files:
 
 ### Project Docs Updates
 
-When updating CONTRIBUTING.md, ARCHITECTURE.md, docs/*.md, or other project docs:
-
-- **Check for a docs/ folder** — Many repos have `docs/API.md`, `docs/FRONTEND.md`, `docs/ARCHITECTURE.md` etc. Route learnings to the most specific existing doc.
-- **Follow CLAUDE.md references** — If CLAUDE.md uses `@docs/api-patterns.md` or similar imports, those are the authoritative locations for domain knowledge.
-- **Match existing style** — Read the file first, follow its conventions
-- **Add to existing sections** — Don't create new sections for single items
-- **Keep it useful for humans too** — These docs serve the whole team, not just Claude
+When updating CONTRIBUTING.md, ARCHITECTURE.md, docs/*.md:
+- Check for a docs/ folder and route learnings to the most specific existing doc
+- Follow CLAUDE.md `@` references to find authoritative locations
+- Match existing style, add to existing sections
+- Keep it useful for humans too — these docs serve the whole team
 
 ## Phase 4: Apply with Approval
 
-Use AskUserQuestion to get approval. Example call:
+Use AskUserQuestion to get approval:
 
 ```json
 {
@@ -189,20 +150,7 @@ Use AskUserQuestion to get approval. Example call:
 }
 ```
 
-If user selects "Let me pick", present each change individually with a separate AskUserQuestion call.
-
-After applying changes:
-
-1. Show a summary table of what was updated:
-
-| File | Change | Lines |
-|------|--------|-------|
-| CLAUDE.md | Removed stale "Use X pattern" entry | -1 |
-| CLAUDE.md | Added gotcha about `safeFoo()` | +1 |
-| .claude/rules/api-conventions.md | Created with zod validation rule | +8 |
-| CONTRIBUTING.md | Added integration test note | +2 |
-
-2. Report final CLAUDE.md line count and remaining budget
+After applying, show a summary table of what was updated with file, change description, and line delta. Report final CLAUDE.md line count and remaining budget.
 
 ## What NOT to Capture
 
@@ -215,20 +163,11 @@ After applying changes:
 
 ## Edge Cases
 
-### No CLAUDE.md exists
-Create a minimal one with the project name and the first learning. Suggest the user flesh it out.
-
-### CLAUDE.md is above 250 lines
-Trigger Phase 2.5 pruning first. If pruning frees enough space, propose additions alongside removals with a net line delta. Only fall back to routing all learnings to .claude/rules/ if pruning cannot free sufficient space.
-
-### .claude/rules/ directory doesn't exist
-Create it with the first rule file. Explain the progressive disclosure pattern to the user.
-
-### Contradictory information
-If a learning contradicts existing documentation, flag it explicitly. Don't silently overwrite — the existing docs may be correct and the session's conclusion may be wrong.
-
-### No learnings found
-Say so honestly: "This session was straightforward — no new learnings to capture." Don't manufacture learnings to justify running the skill.
+- **No CLAUDE.md exists**: Create a minimal one with the project name and the first learning
+- **CLAUDE.md above 250 lines**: Trigger Phase 2.5 pruning first. Only fall back to routing all learnings to .claude/rules/ if pruning cannot free sufficient space
+- **.claude/rules/ doesn't exist**: Create it with the first rule file
+- **Contradictory information**: Flag explicitly. Don't silently overwrite — the existing docs may be correct
+- **No learnings found**: Say so honestly. Don't manufacture learnings to justify running the skill
 
 ---
 

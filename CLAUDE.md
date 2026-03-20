@@ -147,6 +147,8 @@ context: fork
 - **Agent tool** replaced `Task` in Claude Code 2.1.63. Use `Agent` in `allowed-tools` for spawning sub-agents. `Task` still works as a backward-compatible alias but should not be used in new code.
 - **Glob tool** does not support brace expansion `{A,B}*.md` — use separate Glob patterns instead
 - Keep SKILL.md under 500 lines (move detailed examples to EXAMPLES.md)
+- Skills should describe intent, not prescribe exact commands — Claude already knows git, gh, linting, and project detection. Focus on what Claude doesn't know: domain patterns, gotchas, output templates, and non-obvious constraints.
+- When bumping versions with `replace_all`, verify per-skill version tags in README (e.g., `### analyze-deps (v1.9.0)`) weren't changed — they track introduction date, not current version
 
 ### Progressive Disclosure Pattern
 

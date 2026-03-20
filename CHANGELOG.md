@@ -5,6 +5,51 @@ All notable changes to Claude Powerpack will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-03-20
+
+### Changed
+
+#### All Skills — Intent-Based Rewrite
+- **Breaking**: Rewrote all 7 skills to describe intent instead of prescribing exact commands, following Anthropic's "Avoid Railroading Claude" best practice
+- Removed prescriptive bash code blocks that taught Claude things it already knows (git, gh, npm, linting, file detection)
+- Replaced step-by-step shell commands with goal-oriented instructions, giving Claude flexibility to adapt to each project
+- Added Gotchas sections to each skill, collecting non-obvious failure points and constraints in one place
+- Broadened `allowed-tools` from overly-specific patterns (`Bash(git log:*)`) to per-binary wildcards (`Bash(git:*)`) — eliminates permission prompts for valid commands
+- Total reduction: ~500 lines of prescriptive instructions removed across all skills
+
+#### trim-pr
+- Step 1 (base branch detection): 12 lines with 3 code blocks → 1 sentence of intent
+- Step 7 (verification): 5 language-specific code blocks → 1 sentence ("run the project's linter, build, and tests")
+- Kept: cruft patterns table, over-engineering checklist, comment rewriting examples — the actual non-obvious value
+
+#### update-pr
+- Phase 1 (change inventory): 35 lines of git/gh commands with `$BASE_BRANCH` variables → 2 sentences of intent
+- Removed troubleshooting section (basic gh commands Claude already knows)
+- Kept: change categorization table, PR template structure, quality checklist
+
+#### deep-interview
+- Phase 1 (context gathering): removed code blocks for `gh issue view`, Glob, Grep examples
+- Phases 5-6: condensed prescriptive question templates to intent descriptions
+- Kept: interview flow structure, question format examples, PRD output template
+
+#### analyze-deps
+- Step 1 (ecosystem detection): removed all shell code blocks for ls, find, ncu, npm, dotnet
+- Step 2 (research): removed GitHub API code blocks with complex jq
+- Kept: mode table, research priority order, report template, cross-reference step
+
+#### ask-expert
+- Removed `cat > file << 'EOF'` heredoc examples — Claude knows how to create files
+- Removed basic troubleshooting section
+- Kept: extraction script examples (custom tool with non-obvious flags), document structure, config format
+
+#### debrief
+- Phase 2: removed Glob/Grep usage examples
+- Kept essentially everything else — this skill is already knowledge-heavy, not command-heavy
+
+#### mine-history
+- Fixed `$(pwd)` → `.` in script invocation (was triggering permission prompts)
+- Otherwise minimal changes — already well-structured
+
 ## [1.9.0] - 2026-03-16
 
 ### Added
@@ -233,6 +278,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CLAUDE.md, CONTRIBUTING.md, and comprehensive skill documentation
 - Installation instructions and troubleshooting guide
 
+[2.0.0]: https://github.com/propstreet/claude-powerpack/releases/tag/v2.0.0
 [1.9.0]: https://github.com/propstreet/claude-powerpack/releases/tag/v1.9.0
 [1.8.1]: https://github.com/propstreet/claude-powerpack/releases/tag/v1.8.1
 [1.8.0]: https://github.com/propstreet/claude-powerpack/releases/tag/v1.8.0
