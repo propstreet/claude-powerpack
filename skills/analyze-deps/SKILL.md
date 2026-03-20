@@ -5,21 +5,16 @@ argument-hint: "[preflight] [frontend|backend] or [package from to]"
 user-invocable: true
 context: fork
 allowed-tools:
-  # Git & GitHub CLI
   - Bash(git:*)
   - Bash(gh:*)
-  # Package managers
   - Bash(ncu:*)
   - Bash(npm:*)
   - Bash(dotnet:*)
-  # Utilities
   - Bash(ls:*)
   - Bash(find:*)
-  # File operations
   - Read
   - Glob
   - Grep
-  # Research
   - Agent
   - WebSearch
   - WebFetch
@@ -30,9 +25,7 @@ allowed-tools:
 
 Generate a changelog analysis with breaking changes, new features, and actionable recommendations.
 
-## Supported Ecosystems
-
-This skill currently focuses on **npm** and **NuGet** projects. It detects which ecosystems are present by looking for `package.json` (npm) and `Directory.Packages.props` / `*.csproj` (NuGet).
+**User arguments:** $ARGUMENTS
 
 ## Mode
 
@@ -47,72 +40,26 @@ Parse the user's arguments to determine mode:
 | `frontend` / `backend` | Post-update (scoped) | Limit analysis to one ecosystem |
 | `vue 3.5 to 3.6` | Specific | Research a specific package version range |
 
-**User arguments:** $ARGUMENTS
-
 ## Step 1: Detect Ecosystems and Changes
 
-### Auto-detect project type
+Detect which ecosystems are present (look for `package.json` for npm, `Directory.Packages.props` / `*.csproj` for NuGet).
 
-```bash
-# npm project?
-ls package.json 2>/dev/null
+- **Preflight mode**: Check what packages are outdated using ecosystem-appropriate tools (`ncu`, `npm outdated`, `dotnet list --outdated`)
+- **Post-update mode**: Check git diff for changes to package files. If no uncommitted changes, check recent commits
+- **Specific package mode**: Use the package name and version range from arguments directly
 
-# NuGet project?
-ls Directory.Packages.props 2>/dev/null || find . -maxdepth 3 -name "*.csproj" 2>/dev/null | head -1
-```
-
-### Preflight mode — check what would be updated
-
-**npm:**
-```bash
-# ncu if available, otherwise npm outdated
-ncu --packageFile package.json 2>/dev/null || npm outdated 2>/dev/null
-```
-
-**NuGet:**
-```bash
-# Find solution or project file
-TARGET=$(find . -maxdepth 2 -name "*.sln" -print -quit 2>/dev/null)
-[ -z "$TARGET" ] && TARGET=$(find . -maxdepth 3 -name "*.csproj" -print -quit 2>/dev/null)
-[ -n "$TARGET" ] && dotnet list "$TARGET" package --outdated
-```
-
-Build change list: `{package, currentVersion, latestVersion, ecosystem}`.
-
-### Post-update mode — detect what already changed
-
-```bash
-# Check uncommitted changes (npm + NuGet)
-git diff HEAD -- '**/package.json' ':!node_modules'
-git diff HEAD -- '**/Directory.Packages.props' '**/*.csproj'
-```
-
-If no uncommitted changes, check recent commits:
-
-```bash
-git log --oneline -10 --diff-filter=M -- '**/package.json' '**/Directory.Packages.props' '**/*.csproj'
-```
-
-### Specific package mode
-
-Use the package name and version range from arguments directly.
+Build a change list: `{package, currentVersion, newVersion, ecosystem}`.
 
 ## Step 2: Research Each Dependency
 
 For each changed dependency, fetch release notes using these sources **in priority order**:
 
-1. **Context7 MCP** (if available) — `resolve-library-id` → `query-docs` with topics: `"what's new in {version}"`, `"breaking changes"`, `"migration guide"`
-2. **GitHub Releases API** — for npm packages, get repo URL from `npm view {package} repository.url` (strip `git+` prefix and `.git` suffix), then try tag variants:
-   ```bash
-   # Try exact tag first, then with v prefix
-   gh api repos/{owner}/{repo}/releases/tags/{version} --jq '.body' 2>/dev/null || \
-   gh api repos/{owner}/{repo}/releases/tags/v{version} --jq '.body' 2>/dev/null || \
-   gh api repos/{owner}/{repo}/releases --jq '.[0:5] | .[] | .tag_name + ": " + ((.body // "") | split("\n")[0])'
-   ```
-3. **WebSearch** — `"{package} {newVersion} release notes changelog"`
+1. **Context7 MCP** (if available) — `resolve-library-id` → `query-docs` with topics like "what's new", "breaking changes", "migration guide"
+2. **GitHub Releases API** — get repo URL from `npm view`, then fetch releases
+3. **WebSearch** — search for release notes and changelogs
 4. **WebFetch** — CHANGELOG.md or release page from search results
 
-**Parallelization:** When >5 packages changed, use Agent tool to dispatch parallel research subagents (batch 3-5 packages per agent). Each subagent returns structured findings.
+**Parallelization:** When >5 packages changed, use Agent tool to dispatch parallel research subagents (batch 3-5 packages per agent).
 
 ### What to extract per dependency
 
@@ -126,9 +73,9 @@ For each changed dependency, fetch release notes using these sources **in priori
 
 ## Step 3: Cross-Reference with Codebase
 
-For breaking changes and deprecations, use the **Grep** tool to search the codebase for actual usage of affected APIs. Search across relevant file types (`*.cs`, `*.ts`, `*.vue`, `*.js`, `*.tsx`, `*.jsx`) and note file paths and line numbers for the report.
+For breaking changes and deprecations, grep the codebase for actual usage of affected APIs. Note file paths and line numbers for the report.
 
-For new features, identify where in the project they could apply and estimate impact.
+For new features, identify where in the project they could apply.
 
 ## Step 4: Generate Report
 
@@ -137,9 +84,8 @@ For new features, identify where in the project they could apply and estimate im
 ## Mode: {Preflight / Post-update / Specific}
 
 ## Summary
-{Preflight: "N packages have updates available" / Post-update: "Updated N packages"}
-({npm_count} npm, {nuget_count} NuGet)
 {one-line highlight of most impactful change}
+({npm_count} npm, {nuget_count} NuGet)
 
 ## Breaking Changes
 | Package | From → To | Change | Affected Code | Action Required |
@@ -149,7 +95,6 @@ For new features, identify where in the project they could apply and estimate im
 ## New Features Worth Adopting
 | Package | Feature | Potential Use | Impact Area |
 |---------|---------|---------------|-------------|
-(Concrete improvements: UX, DX, performance)
 
 ## Performance Improvements
 | Package | Improvement | Estimated Impact |
@@ -176,11 +121,12 @@ For new features, identify where in the project they could apply and estimate im
 - ...
 ```
 
-### Report quality rules
+## Gotchas
 
-- **Be specific to the project** — grep for actual usage, reference real file paths
-- **Link to docs** — include URLs to migration guides or feature docs
-- **Preflight risk assessment** — rate each package: safe (patch), review (minor), research (major)
-- **Skip noise** — don't list every patch bump, focus on what matters
+- Be specific to the project — grep for actual usage, reference real file paths
+- Link to docs — include URLs to migration guides or feature docs
+- For preflight, rate each package: safe (patch), review (minor), research (major)
+- Skip noise — don't list every patch bump, focus on what matters
+- Shell constructs like `$()`, `&&`, and variable assignments in Bash calls can trigger permission prompts. Prefer simple, single-command calls when possible.
 
 ---

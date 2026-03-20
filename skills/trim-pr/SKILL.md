@@ -4,10 +4,8 @@ description: Trim a PR before merging - remove complexity that accumulated durin
 user-invocable: true
 context: fork
 allowed-tools:
-  # Git & GitHub CLI (read-only)
   - Bash(git:*)
   - Bash(gh:*)
-  # Build/lint/test
   - Bash(npm run:*)
   - Bash(npx:*)
   - Bash(ruff:*)
@@ -20,7 +18,6 @@ allowed-tools:
   - Bash(dotnet build:*)
   - Bash(dotnet test:*)
   - Bash(dotnet format:*)
-  # File operations
   - Read
   - Edit
   - Glob
@@ -29,37 +26,11 @@ allowed-tools:
 
 # PR Simplification
 
-Trim complexity that accumulated during development. This is NOT a code review - focus on removing cruft, not evaluating design decisions.
-
-## When to Use This Skill
-
-- Before merging a PR that went through multiple iterations
-- When you suspect accumulated complexity from debugging/experimentation
-- After receiving "simplify" or "clean up" feedback from reviewers
-- Self-review before requesting PR review
+Trim complexity that accumulated during development. This is NOT a code review — focus on removing cruft, not evaluating design decisions.
 
 ## 1. Understand the Changes
 
-Determine base branch and review scope.
-
-**Important: Run commands separately — do NOT use `$()` command substitution, as it triggers permission prompts.**
-
-First, get the base branch:
-```bash
-gh pr view --json baseRefName -q '.baseRefName'
-```
-
-If no PR exists, fall back:
-```bash
-git rev-parse --abbrev-ref origin/HEAD
-```
-
-Then use that branch name in subsequent commands:
-```bash
-git diff <base-branch>...HEAD --stat
-```
-
-Read key changed files to understand what was built.
+Determine the PR's base branch and review the full diff and changed files to understand what was built.
 
 ## 2. Look for Accumulated Cruft
 
@@ -77,8 +48,6 @@ During development, code often accumulates:
 | Console.log / print statements                   | Remove or use proper logger          |
 | Temporary variable names (temp, foo, xxx)        | Use descriptive names                |
 | Comments referencing PR/PRD/review context       | Rewrite for future maintainers       |
-
-**Note:** Named booleans like `isStarting` are often MORE readable than inlining conditions. Prefer clarity over minimal code.
 
 ## 3. Check for Over-Engineering
 
@@ -119,7 +88,7 @@ Look for:
 
 ## 5. Clean Up Development-Context Comments
 
-Comments written during development often reference context that won't exist for future maintainers. Review and rewrite comments that:
+Comments written during development often reference context that won't exist for future maintainers:
 
 ### Reference PR/Review Context
 
@@ -136,8 +105,8 @@ Comments written during development often reference context that won't exist for
 | ------------------- | ---------------------- |
 | `// PRD Phase 2 scope` | `// Extended validation for enterprise users` |
 | `// Part of #531 quick win` | `// Simplified flow for common case` |
-| `// Out of scope for this PR` | (delete - git history has this) |
-| `// MVP implementation, see PRD for full spec` | `// Basic implementation - see [doc] for extension points` |
+| `// Out of scope for this PR` | (delete — git history has this) |
+| `// MVP implementation, see PRD for full spec` | `// Basic implementation — see [doc] for extension points` |
 
 ### Temporal References
 
@@ -145,55 +114,18 @@ Comments written during development often reference context that won't exist for
 | ------------------- | ---------------------- |
 | `// TODO: revisit after merge` | (either do it now or delete) |
 | `// Temporary workaround until X ships` | `// Workaround for [issue] in [dependency]` |
-| `// New approach as of this PR` | (delete - all code was "new" once) |
-| `// Changed from previous implementation` | (delete - git diff shows this) |
+| `// New approach as of this PR` | (delete — all code was "new" once) |
+| `// Changed from previous implementation` | (delete — git diff shows this) |
 
 **Rule of thumb**: If a comment only makes sense to someone who read the PR, rewrite it or delete it.
 
 ## 6. Address PR Review Comments
 
-If there are review comments from GitHub Actions, reviewers, or automated tools:
-
-- Address substantive findings
-- Verify the finding is still valid (reviewers see old commits)
-- Explain trade-offs if not implementing a suggestion
+If there are review comments from GitHub Actions, reviewers, or automated tools — address substantive findings, verify they're still valid (reviewers see old commits), and explain trade-offs if not implementing a suggestion.
 
 ## 7. Verify
 
-After changes, run the project's standard checks based on project type:
-
-**Node.js:**
-```bash
-[ -f package.json ] && npm run lint && npm run build
-```
-
-**Python:**
-```bash
-# Prefer ruff if available, fall back to pylint
-if [ -f pyproject.toml ] || [ -f setup.py ]; then
-  command -v ruff >/dev/null && ruff check .
-  command -v pylint >/dev/null && pylint .
-fi
-```
-
-**Go:**
-```bash
-[ -f go.mod ] && go build ./... && go vet ./...
-```
-
-**Rust:**
-```bash
-[ -f Cargo.toml ] && cargo check
-```
-
-**.NET:**
-```bash
-ls *.sln >/dev/null 2>&1 && dotnet build && dotnet test
-```
-
-Or use project-specific commands if documented (check README, CONTRIBUTING, or CLAUDE.md).
-
-Run relevant tests to ensure nothing broke.
+Run the project's linter, build, and tests to verify nothing broke. Check project docs (README, CONTRIBUTING, CLAUDE.md) for project-specific commands.
 
 ## Output
 
@@ -204,7 +136,6 @@ Summary table of changes made:
 | Duplicate null check in `handleSubmit` | Removed redundant check | Low |
 | Debug console.log in `api.ts` | Removed | Low |
 | Unused `IFutureFeature` interface | Deleted | Low |
-| ... | ... | ... |
 
 **Risk levels:**
 - **Low**: Removed dead code, comments, or unused imports
@@ -213,11 +144,12 @@ Summary table of changes made:
 
 If no changes needed, state that the code is already clean and why.
 
----
+## Gotchas
+
+- Named booleans like `isStarting` are often MORE readable than inlining conditions. Prefer clarity over minimal code.
+- Shell constructs like `$()`, `&&`, and variable assignments in Bash calls can trigger permission prompts. Prefer simple, single-command calls when possible.
 
 ## Quick Checklist
-
-Before marking complete:
 
 - [ ] No commented-out code remaining
 - [ ] No TODO comments for completed work

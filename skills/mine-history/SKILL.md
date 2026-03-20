@@ -4,7 +4,7 @@ description: Extract and synthesize learnings from past Claude Code session tran
 user-invocable: true
 argument-hint: "[--since-days=90] [--max-pairs=500]"
 allowed-tools:
-  - Bash(node:*scripts/extract-learnings.js*)
+  - Bash(node:*)
   - Bash(wc:*)
   - Bash(head:*)
   - Bash(cat:*)
@@ -28,30 +28,24 @@ $ARGUMENTS
 Run the extraction script to scan all session transcripts for user corrections:
 
 ```bash
-node {SKILL_DIR}/scripts/extract-learnings.js \
-  --project="$(pwd)" \
-  --output="/tmp/learnings-raw.md" \
+node scripts/extract-learnings.js \
+  --project=. \
+  --output=/tmp/learnings-raw.md \
   --since-days=90 \
   --max-pairs=500
 ```
 
-**Adjust flags based on user arguments** — pass `--since-days` and `--max-pairs` if specified.
+Adjust `--since-days` and `--max-pairs` based on user arguments.
 
 Read the output file to understand what was extracted.
 
 ## Phase 2: Audit Existing Documentation
 
-Before proposing any changes, read ALL existing documentation to understand what's already captured:
-
-1. **Read CLAUDE.md** — the root project instructions
-2. **Scan docs/*.md** — all project documentation files
-3. **Scan .claude/rules/** — any existing rule files
-
-Build a mental map of what's already documented.
+Before proposing any changes, read ALL existing documentation to understand what's already captured — CLAUDE.md, docs/*.md, .claude/rules/. Build a mental map of what's already documented.
 
 ## Phase 3: Synthesize & Deduplicate
 
-Work through the extracted corrections by topic. For each correction:
+Work through the extracted corrections by topic:
 
 | Check | Action |
 |-------|--------|
@@ -67,7 +61,7 @@ Work through the extracted corrections by topic. For each correction:
 - Would prevent a real mistake if documented
 - Are concise enough for a one-liner or short paragraph
 
-**Categorize each learning by destination:**
+**Route by category:**
 
 | Category | Target File |
 |----------|------------|
@@ -93,42 +87,23 @@ Present ALL proposed changes in a single summary before writing anything:
 
 #### 1. docs/FRONTEND.md
 - **Add to Reactivity section**: "Never unwrap .value in addToast() calls — refs stay reactive"
-- **Add to Testing section**: "Use vi.waitFor() not flushWithTimers() for complex async chains"
 
-#### 2. docs/DATABASE.md
-- **Add to Query Patterns**: "Use OfType<T>() cast pattern, not direct property access through base type"
-
-#### 3. Skipped (already documented)
+#### 2. Skipped (already documented)
 - "Use npm run scripts" — in CLAUDE.md line 12
-- "Never use storeToRefs" — in CLAUDE.md line 143
 ```
 
 ## Phase 5: Apply with Approval
 
-Use AskUserQuestion to get approval before writing:
+Use AskUserQuestion to get approval before writing. Options: apply all, let me pick, save proposals to file, or skip.
 
-```
-Options:
-- Apply all
-- Let me pick (show each individually)
-- Save proposals to file (review later)
-- Skip
-```
+After applying, show a summary table with file, change description, and line delta.
 
-After applying, show a summary table:
+## Gotchas
 
-| File | Change | Lines |
-|------|--------|-------|
-| docs/FRONTEND.md | Added 3 patterns to Reactivity section | +6 |
-| docs/DATABASE.md | Added query cast pattern | +3 |
-
-## Important Guidelines
-
-- **Never add session-specific context** — "We fixed bug #42" is not a learning
-- **Prefer updating over adding** — extend existing bullets, don't create new sections
-- **One-liners only for CLAUDE.md** — it has a 300-line budget
-- **Route domain knowledge to docs/*.md** — that's where detailed patterns belong
-- **Don't duplicate linter rules** — if the toolchain enforces it, don't document it
-- **Respect the correction pair** — the user's words are the authoritative source
-- **Multiple occurrences = high confidence** — a pattern seen across 3+ sessions is almost certainly worth documenting
-- **Single occurrence = verify first** — read the surrounding context before proposing
+- Never add session-specific context — "We fixed bug #42" is not a learning
+- Prefer updating over adding — extend existing bullets, don't create new sections
+- One-liners only for CLAUDE.md — it has a 300-line budget
+- Route domain knowledge to docs/*.md — that's where detailed patterns belong
+- Don't duplicate linter rules — if the toolchain enforces it, don't document it
+- Multiple occurrences = high confidence — a pattern seen across 3+ sessions is almost certainly worth documenting
+- Single occurrence = verify first — read the surrounding context before proposing
