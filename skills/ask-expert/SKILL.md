@@ -68,7 +68,13 @@ node scripts/extract-code.js \
 
 ### Step 3: Add Expert Request
 
-Append the specific questions and success criteria to the document.
+Append an "Expert Guidance Request" section to the end of the document with:
+
+- **Questions** — Numbered list of specific technical questions derived from the user's concerns
+- **Success Criteria** — Bullet list of requirements and priorities
+- **"Please answer in English"** — Always include as the final line
+
+This section is critical — without it, the expert has no actionable request.
 
 ### Step 4: Verify Size
 
