@@ -462,12 +462,12 @@ function getNewFilesSince(baseRef) {
 
   const output = execFileSync(
     "git",
-    ["diff", "--name-only", "--diff-filter=A", `${mergeBase}..HEAD`],
+    ["diff", "--name-only", "--diff-filter=A", "-z", `${mergeBase}..HEAD`],
     { encoding: "utf8", cwd: gitRoot }
-  ).trim();
+  );
 
   if (!output) return { gitRoot, files: [] };
-  return { gitRoot, files: output.split("\n") };
+  return { gitRoot, files: output.split("\0").filter(Boolean) };
 }
 
 /**
@@ -1258,8 +1258,9 @@ function main() {
         });
       } else {
         // Stat summary as text (not valid diff syntax)
+        const statFence = safeFence(stat);
         const statBlock = stat
-          ? `\`\`\`text\n${stat}\n\`\`\`\n\n`
+          ? `${statFence}text\n${stat}\n${statFence}\n\n`
           : "";
         // Patch as diff (valid unified diff)
         const patchFence = safeFence(patch);
