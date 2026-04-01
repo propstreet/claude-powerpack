@@ -5,6 +5,16 @@ All notable changes to Claude Powerpack will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-04-01
+
+### Added
+
+#### Ask Expert Skill
+- New `--branch-diff <base>` option to extract all changes between merge-base of a branch and HEAD — ideal for PR consultations that need the full picture in one command
+- New `--new-files-from <base>` option to include full syntax-highlighted source of files added since a base branch (complements `--branch-diff` for new file review)
+- Both options auto-resolve merge base, so merged upstream commits don't pollute the diff
+- Updated SKILL.md and EXAMPLES.md with branch-level patterns and a complete PR consultation example
+
 ## [2.0.1] - 2026-03-23
 
 ### Fixed
@@ -285,6 +295,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CLAUDE.md, CONTRIBUTING.md, and comprehensive skill documentation
 - Installation instructions and troubleshooting guide
 
+[2.1.0]: https://github.com/propstreet/claude-powerpack/releases/tag/v2.1.0
 [2.0.1]: https://github.com/propstreet/claude-powerpack/releases/tag/v2.0.1
 [2.0.0]: https://github.com/propstreet/claude-powerpack/releases/tag/v2.0.0
 [1.9.0]: https://github.com/propstreet/claude-powerpack/releases/tag/v1.9.0

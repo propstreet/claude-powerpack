@@ -399,6 +399,72 @@ function readDiffContent(filePath, diffRange) {
   }
 }
 
+/**
+ * Resolve merge base between a ref and HEAD
+ * @param {string} baseRef - Base branch or ref (e.g., "master", "main")
+ * @returns {string} Merge base commit SHA
+ * @throws {Error} If merge base cannot be found
+ */
+function getMergeBase(baseRef) {
+  validateGitRepository();
+  try {
+    return execFileSync("git", ["merge-base", baseRef, "HEAD"], {
+      encoding: "utf8",
+      stdio: ["pipe", "pipe", "pipe"],
+    }).trim();
+  } catch {
+    throw new Error(
+      `Could not find merge base between '${baseRef}' and HEAD. Is '${baseRef}' a valid branch?`
+    );
+  }
+}
+
+/**
+ * Get unified diff of all changes between merge-base of baseRef and HEAD.
+ * Includes --stat summary followed by full patch.
+ * @param {string} baseRef - Base branch (e.g., "master", "main")
+ * @returns {string} Combined stat + patch diff output
+ */
+function getBranchDiff(baseRef) {
+  const mergeBase = getMergeBase(baseRef);
+  const gitRoot = execFileSync("git", ["rev-parse", "--show-toplevel"], {
+    encoding: "utf8",
+  }).trim();
+
+  const diff = execFileSync(
+    "git",
+    ["-c", "color.ui=false", "diff", "--no-ext-diff", "--stat", "-p", `${mergeBase}..HEAD`],
+    { encoding: "utf8", cwd: gitRoot, maxBuffer: 10 * 1024 * 1024 }
+  );
+
+  if (!diff || diff.trim() === "") {
+    return `(No changes between ${baseRef} (${mergeBase.slice(0, 8)}) and HEAD)`;
+  }
+
+  return diff;
+}
+
+/**
+ * Get list of files added (not just modified) since merge-base of baseRef.
+ * @param {string} baseRef - Base branch (e.g., "master", "main")
+ * @returns {string[]} Array of absolute paths to new files
+ */
+function getNewFilesSince(baseRef) {
+  const mergeBase = getMergeBase(baseRef);
+  const gitRoot = execFileSync("git", ["rev-parse", "--show-toplevel"], {
+    encoding: "utf8",
+  }).trim();
+
+  const output = execFileSync(
+    "git",
+    ["diff", "--name-only", "--diff-filter=A", `${mergeBase}..HEAD`],
+    { encoding: "utf8", cwd: gitRoot }
+  ).trim();
+
+  if (!output) return [];
+  return output.split("\n").map((f) => path.resolve(gitRoot, f));
+}
+
 // ============================================================================
 // Line Range Operations
 // ============================================================================
@@ -766,9 +832,13 @@ Options:
                        Can be used multiple times for different files
   --config <file>      Use JSON config file for batch extraction
                        See example-config.json for format
-  --staged             Include all staged changes (git diff --cached)
-  --commit <ref>       Include a commit's changes (git show <ref>)
-                       Can be used multiple times for multiple commits
+  --staged               Include all staged changes (git diff --cached)
+  --commit <ref>         Include a commit's changes (git show <ref>)
+                         Can be used multiple times for multiple commits
+  --branch-diff <base>   All changes between merge-base of <base> and HEAD.
+                         Auto-resolves merge base. Ideal for PR consultations.
+  --new-files-from <base> Full source of files added (not modified) since <base>.
+                         Complements --branch-diff with syntax-highlighted new files.
 
 Output:
   Prints markdown-formatted code blocks with file paths and line ranges.
@@ -847,6 +917,18 @@ Examples:
                --section="Context Files" \\
                src/Service.cs src/Model.cs
 
+  # PR consultation: all changes on this branch vs master (single command)
+  extract-code --branch-diff=master --track-size --output=consultation.md
+
+  # PR consultation: diffs + full source of new files
+  extract-code --branch-diff=master --new-files-from=master \\
+               --track-size --output=consultation.md
+
+  # Branch diff with additional context files
+  extract-code --branch-diff=master --track-size --output=doc.md \\
+               --section="Architecture Context" \\
+               src/shared/types.ts src/config.ts
+
 Notes:
   • Automatically detects language from file extension
   • Line numbers are 1-indexed (first line is line 1)
@@ -860,6 +942,8 @@ Notes:
   • Section headers apply to the immediately following file only
   • Diff mode requires git repository and valid refs
   • Diff output uses unified diff format (standard git diff)
+  • --branch-diff auto-resolves merge base (handles merged master commits)
+  • --new-files-from only includes Added files (diff-filter=A), not modified ones
 `);
 }
 
@@ -895,6 +979,12 @@ function main() {
     commit: {
       type: "string",
       multiple: true,
+    },
+    "branch-diff": {
+      type: "string",
+    },
+    "new-files-from": {
+      type: "string",
     },
   };
 
@@ -943,8 +1033,12 @@ function main() {
   const commits = (Array.isArray(rawCommits) ? rawCommits : [rawCommits])
     .filter((ref) => ref && ref.trim() !== "");
 
-  // Files are optional if using --staged or --commit
-  const hasGitOptions = args.staged || commits.length > 0;
+  // Parse new branch-level flags
+  const branchDiffBase = args["branch-diff"] || null;
+  const newFilesBase = args["new-files-from"] || null;
+
+  // Files are optional if using --staged, --commit, --branch-diff, or --new-files-from
+  const hasGitOptions = args.staged || commits.length > 0 || !!branchDiffBase || !!newFilesBase;
 
   if (fileArgs.length === 0 && !hasGitOptions) {
     console.error("❌ No files specified");
@@ -987,6 +1081,18 @@ function main() {
           error: error.message,
         });
       }
+      if (branchDiffBase) {
+        validationErrors.push({
+          fileArg: `--branch-diff=${branchDiffBase}`,
+          error: error.message,
+        });
+      }
+      if (newFilesBase) {
+        validationErrors.push({
+          fileArg: `--new-files-from=${newFilesBase}`,
+          error: error.message,
+        });
+      }
     }
 
     // Then validate each commit reference (only if repo is valid)
@@ -1001,6 +1107,30 @@ function main() {
           validationErrors.push({
             fileArg: `--commit=${commitRef}`,
             error: `Invalid commit reference: ${commitRef}`,
+          });
+        }
+      }
+
+      // Validate --branch-diff base ref
+      if (branchDiffBase) {
+        try {
+          getMergeBase(branchDiffBase);
+        } catch (error) {
+          validationErrors.push({
+            fileArg: `--branch-diff=${branchDiffBase}`,
+            error: error.message,
+          });
+        }
+      }
+
+      // Validate --new-files-from base ref
+      if (newFilesBase) {
+        try {
+          getMergeBase(newFilesBase);
+        } catch (error) {
+          validationErrors.push({
+            fileArg: `--new-files-from=${newFilesBase}`,
+            error: error.message,
           });
         }
       }
@@ -1072,6 +1202,70 @@ function main() {
         console.error(`❌ Error getting commit ${commitRef}: ${error.message}`);
         hasErrors = true;
       }
+    }
+  }
+
+  // Process --branch-diff option (all changes on branch vs base)
+  if (branchDiffBase) {
+    try {
+      const branchDiff = getBranchDiff(branchDiffBase);
+      const mergeBase = getMergeBase(branchDiffBase);
+      const output = `### Branch diff: ${branchDiffBase}...HEAD (merge-base: ${mergeBase.slice(0, 8)})\n\n\`\`\`diff\n${branchDiff}\n\`\`\``;
+      const contentSize = Buffer.byteLength(output + "\n\n", "utf8");
+      pendingResults.push({
+        label: `[branch-diff] ${branchDiffBase}...HEAD`,
+        output,
+        contentSize,
+      });
+    } catch (error) {
+      console.error(`❌ Error getting branch diff: ${error.message}`);
+      hasErrors = true;
+    }
+  }
+
+  // Process --new-files-from option (full source of added files)
+  if (newFilesBase) {
+    try {
+      const newFiles = getNewFilesSince(newFilesBase);
+      if (newFiles.length === 0) {
+        const output = `### New files since ${newFilesBase}\n\n(No new files)`;
+        const contentSize = Buffer.byteLength(output + "\n\n", "utf8");
+        pendingResults.push({
+          label: "[new-files] (none)",
+          output,
+          contentSize,
+        });
+      } else {
+        // Section header
+        const header = `### New files since ${newFilesBase} (${newFiles.length} files)\n\n`;
+        const headerSize = Buffer.byteLength(header, "utf8");
+        pendingResults.push({
+          label: `[new-files] header (${newFiles.length} files)`,
+          output: header,
+          contentSize: headerSize,
+        });
+
+        for (const newFilePath of newFiles) {
+          try {
+            const language = detectLanguage(newFilePath);
+            const content = fs.readFileSync(newFilePath, "utf8");
+            const output = formatCodeBlock(newFilePath, language, content, null);
+            const contentSize = Buffer.byteLength(output + "\n\n", "utf8");
+            const filename = path.basename(newFilePath);
+            pendingResults.push({
+              label: `[new] ${filename}`,
+              output,
+              contentSize,
+            });
+          } catch (error) {
+            console.error(`❌ Error reading new file ${newFilePath}: ${error.message}`);
+            hasErrors = true;
+          }
+        }
+      }
+    } catch (error) {
+      console.error(`❌ Error listing new files: ${error.message}`);
+      hasErrors = true;
     }
   }
 

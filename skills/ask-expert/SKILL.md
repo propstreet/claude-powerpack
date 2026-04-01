@@ -64,6 +64,10 @@ node scripts/extract-code.js \
 - Staged changes: `--staged`
 - Commit changes: `--commit=abc123` or `--commit=HEAD~1`
 
+**Branch-level options (PR consultations):**
+- All branch changes: `--branch-diff=master` (auto-resolves merge base)
+- Full source of new files: `--new-files-from=master` (syntax-highlighted, not diff format)
+
 **Prefer FULL files over chunks** for better expert analysis. Use chunks only for very large files.
 
 ### Step 3: Add Expert Request
@@ -107,6 +111,17 @@ node scripts/extract-code.js \
 
 node scripts/extract-code.js \
   --commit=abc123 --track-size --output=doc.md
+```
+
+**PR consultation (single command for all branch changes):**
+```bash
+node scripts/extract-code.js \
+  --branch-diff=master --track-size --output=consultation.md
+
+# With full source of new files (syntax-highlighted, not diff format)
+node scripts/extract-code.js \
+  --branch-diff=master --new-files-from=master \
+  --track-size --output=consultation.md
 ```
 
 ## Config File Format
