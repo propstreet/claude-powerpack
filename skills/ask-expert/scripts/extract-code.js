@@ -463,7 +463,7 @@ function getNewFilesSince(baseRef) {
   const output = execFileSync(
     "git",
     ["diff", "--name-only", "--diff-filter=A", "-z", `${mergeBase}..HEAD`],
-    { encoding: "utf8", cwd: gitRoot }
+    { encoding: "utf8", cwd: gitRoot, maxBuffer: 10 * 1024 * 1024 }
   );
 
   if (!output) return { gitRoot, files: [] };
@@ -1295,7 +1295,7 @@ function main() {
         });
       } else {
         // Section header
-        const header = `### New files since ${newFilesBase} (${newFiles.length} files)\n\n`;
+        const header = `### New files since ${newFilesBase} (${newFiles.length} files)`;
         const headerSize = Buffer.byteLength(header + "\n\n", "utf8");
         pendingResults.push({
           label: `[new-files] header (${newFiles.length} files)`,
@@ -1311,7 +1311,7 @@ function main() {
             const output = formatCodeBlock(absPath, language, content, null);
             const contentSize = Buffer.byteLength(output + "\n\n", "utf8");
             pendingResults.push({
-              label: `[new] ${path.basename(relPath)}`,
+              label: `[new] ${relPath}`,
               output,
               contentSize,
             });
