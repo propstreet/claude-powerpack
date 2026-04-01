@@ -191,6 +191,65 @@ cat >> typescript-strict-consultation.md << 'EOF'
 EOF
 ```
 
+### Example 4: PR Consultation (Branch Diff)
+
+**Scenario**: Need expert review of an entire feature branch before merging
+
+```bash
+# 1. Create consultation document with problem context
+cat > feature-consultation.md << 'EOF'
+# Expert Consultation: Agent Split-Pane Panel
+
+## 1. Problem
+The agent chat lives in a sidebar that blocks navigation...
+
+## 2. Our Solution
+Persistent split-pane panel with container queries...
+
+---
+# Complete Architecture Context
+EOF
+
+# 2. Extract ALL branch changes in a single command
+node scripts/extract-code.js \
+  --branch-diff=master \
+  --track-size --output=feature-consultation.md
+
+# 3. Or combine: diffs + full source of new files (syntax-highlighted)
+node scripts/extract-code.js \
+  --branch-diff=master \
+  --new-files-from=master \
+  --track-size --output=feature-consultation.md
+
+# 4. Or branch diff + additional context files
+node scripts/extract-code.js \
+  --branch-diff=master \
+  --track-size --output=feature-consultation.md \
+  --section="Architecture Context" \
+  src/shared/types.ts src/config.ts
+
+# 5. Add expert questions and verify size
+cat >> feature-consultation.md << 'EOF'
+
+---
+# Expert Guidance Request
+
+## Questions
+1. Are there architectural concerns with the container query approach?
+2. Accessibility gaps to address before shipping?
+3. Edge cases we might be missing?
+
+## Success Criteria
+- Production-ready for demo with tier 1 clients
+- Accessible (WCAG 2.1 AA)
+- Mobile fallback works
+
+**Please answer in English**
+EOF
+
+wc -c feature-consultation.md
+```
+
 ## Extract-Code Script Usage
 
 ### Basic Patterns
@@ -219,7 +278,28 @@ node scripts/extract-code.js \
   src/Models/User.cs src/Service.cs:100-150
 ```
 
-### Git Diff Patterns
+### Branch-Level Patterns
+
+**All changes on branch vs master (PR consultation):**
+```bash
+node scripts/extract-code.js \
+  --branch-diff=master --track-size --output=consultation.md
+```
+
+**Branch diff + full source of new files:**
+```bash
+node scripts/extract-code.js \
+  --branch-diff=master --new-files-from=master \
+  --track-size --output=consultation.md
+```
+
+**Branch diff against a different base:**
+```bash
+node scripts/extract-code.js \
+  --branch-diff=develop --track-size --output=consultation.md
+```
+
+### Git Diff Patterns (Per-File)
 
 **Diff vs master (default):**
 ```bash

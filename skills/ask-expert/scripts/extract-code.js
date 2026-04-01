@@ -399,6 +399,91 @@ function readDiffContent(filePath, diffRange) {
   }
 }
 
+/**
+ * Resolve merge base between a ref and HEAD
+ * @param {string} baseRef - Base branch or ref (e.g., "master", "main")
+ * @returns {string} Merge base commit SHA
+ * @throws {Error} If merge base cannot be found
+ */
+function getMergeBase(baseRef) {
+  validateGitRepository();
+  try {
+    return execFileSync("git", ["merge-base", baseRef, "HEAD"], {
+      encoding: "utf8",
+      stdio: ["pipe", "pipe", "pipe"],
+    }).trim();
+  } catch {
+    throw new Error(
+      `Could not find merge base between '${baseRef}' and HEAD. Is '${baseRef}' a valid branch?`
+    );
+  }
+}
+
+/**
+ * Get stat summary and unified patch of all changes between merge-base of baseRef and HEAD.
+ * @param {string} baseRef - Base branch (e.g., "master", "main")
+ * @returns {{mergeBase: string, stat: string, patch: string}} Merge base SHA, stat summary, and patch diff
+ */
+function getBranchDiff(baseRef) {
+  const mergeBase = getMergeBase(baseRef);
+  const gitRoot = execFileSync("git", ["rev-parse", "--show-toplevel"], {
+    encoding: "utf8",
+  }).trim();
+
+  const gitOpts = { encoding: "utf8", cwd: gitRoot, maxBuffer: 10 * 1024 * 1024 };
+  const range = `${mergeBase}..HEAD`;
+
+  const stat = execFileSync(
+    "git",
+    ["-c", "color.ui=false", "diff", "--no-ext-diff", "--stat", range],
+    gitOpts
+  );
+
+  const patch = execFileSync(
+    "git",
+    ["-c", "color.ui=false", "diff", "--no-ext-diff", "-p", range],
+    gitOpts
+  );
+
+  return { mergeBase, stat: stat.trim(), patch: patch.trim() };
+}
+
+/**
+ * Get list of files added (not just modified) since merge-base of baseRef.
+ * Returns repo-relative paths so callers can read from HEAD via git show.
+ * @param {string} baseRef - Base branch (e.g., "master", "main")
+ * @returns {{gitRoot: string, files: string[]}} Git root and array of repo-relative paths
+ */
+function getNewFilesSince(baseRef) {
+  const mergeBase = getMergeBase(baseRef);
+  const gitRoot = execFileSync("git", ["rev-parse", "--show-toplevel"], {
+    encoding: "utf8",
+  }).trim();
+
+  const output = execFileSync(
+    "git",
+    ["diff", "--name-only", "--diff-filter=A", "-z", `${mergeBase}..HEAD`],
+    { encoding: "utf8", cwd: gitRoot, maxBuffer: 10 * 1024 * 1024 }
+  );
+
+  if (!output) return { gitRoot, files: [] };
+  return { gitRoot, files: output.split("\0").filter(Boolean) };
+}
+
+/**
+ * Read a file's content from HEAD (committed state) rather than the working tree.
+ * @param {string} relPath - Repo-relative path (e.g., "src/foo.ts")
+ * @param {string} gitRoot - Absolute path to git root
+ * @returns {string} File content at HEAD
+ */
+function readFileAtHead(relPath, gitRoot) {
+  return execFileSync("git", ["show", `HEAD:${relPath}`], {
+    encoding: "utf8",
+    cwd: gitRoot,
+    maxBuffer: 10 * 1024 * 1024,
+  });
+}
+
 // ============================================================================
 // Line Range Operations
 // ============================================================================
@@ -482,6 +567,22 @@ function readFileContent(filePath, lineRanges) {
 // ============================================================================
 
 /**
+ * Return a backtick fence that is longer than any backtick run in content.
+ * Minimum 3 backticks (standard markdown).
+ * @param {string} content - Text that will be wrapped
+ * @returns {string} A safe fence string (e.g., "```" or "````")
+ */
+function safeFence(content) {
+  let longest = 0;
+  const re = /`{3,}/g;
+  let m;
+  while ((m = re.exec(content)) !== null) {
+    if (m[0].length > longest) longest = m[0].length;
+  }
+  return "`".repeat(Math.max(3, longest + 1));
+}
+
+/**
  * Format file content as markdown code block
  * @param {string} filePath - Path to file
  * @param {string} language - Language for syntax highlighting
@@ -496,10 +597,11 @@ function formatCodeBlock(filePath, language, content, lineRanges) {
     lineRangeStr = ` (lines ${rangeStrings.join(", ")})`;
   }
 
+  const fence = safeFence(content);
   return `# File: ${filePath}${lineRangeStr}
-\`\`\`${language}
+${fence}${language}
 ${content}
-\`\`\``;
+${fence}`;
 }
 
 /**
@@ -510,10 +612,11 @@ ${content}
  * @returns {string} Formatted markdown diff block
  */
 function formatDiffBlock(filePath, diffContent, diffRange) {
+  const fence = safeFence(diffContent);
   return `# File: ${filePath} (diff=${diffRange})
-\`\`\`diff
+${fence}diff
 ${diffContent}
-\`\`\``;
+${fence}`;
 }
 
 // ============================================================================
@@ -766,9 +869,13 @@ Options:
                        Can be used multiple times for different files
   --config <file>      Use JSON config file for batch extraction
                        See example-config.json for format
-  --staged             Include all staged changes (git diff --cached)
-  --commit <ref>       Include a commit's changes (git show <ref>)
-                       Can be used multiple times for multiple commits
+  --staged               Include all staged changes (git diff --cached)
+  --commit <ref>         Include a commit's changes (git show <ref>)
+                         Can be used multiple times for multiple commits
+  --branch-diff <base>   All changes between merge-base of <base> and HEAD.
+                         Auto-resolves merge base. Ideal for PR consultations.
+  --new-files-from <base> Full source of files added (not modified) since <base>.
+                         Complements --branch-diff with syntax-highlighted new files.
 
 Output:
   Prints markdown-formatted code blocks with file paths and line ranges.
@@ -847,6 +954,18 @@ Examples:
                --section="Context Files" \\
                src/Service.cs src/Model.cs
 
+  # PR consultation: all changes on this branch vs master (single command)
+  extract-code --branch-diff=master --track-size --output=consultation.md
+
+  # PR consultation: diffs + full source of new files
+  extract-code --branch-diff=master --new-files-from=master \\
+               --track-size --output=consultation.md
+
+  # Branch diff with additional context files
+  extract-code --branch-diff=master --track-size --output=doc.md \\
+               --section="Architecture Context" \\
+               src/shared/types.ts src/config.ts
+
 Notes:
   • Automatically detects language from file extension
   • Line numbers are 1-indexed (first line is line 1)
@@ -860,6 +979,8 @@ Notes:
   • Section headers apply to the immediately following file only
   • Diff mode requires git repository and valid refs
   • Diff output uses unified diff format (standard git diff)
+  • --branch-diff auto-resolves merge base (handles merged master commits)
+  • --new-files-from only includes Added files (diff-filter=A), not modified ones
 `);
 }
 
@@ -895,6 +1016,12 @@ function main() {
     commit: {
       type: "string",
       multiple: true,
+    },
+    "branch-diff": {
+      type: "string",
+    },
+    "new-files-from": {
+      type: "string",
     },
   };
 
@@ -943,8 +1070,12 @@ function main() {
   const commits = (Array.isArray(rawCommits) ? rawCommits : [rawCommits])
     .filter((ref) => ref && ref.trim() !== "");
 
-  // Files are optional if using --staged or --commit
-  const hasGitOptions = args.staged || commits.length > 0;
+  // Parse new branch-level flags
+  const branchDiffBase = args["branch-diff"] || null;
+  const newFilesBase = args["new-files-from"] || null;
+
+  // Files are optional if using --staged, --commit, --branch-diff, or --new-files-from
+  const hasGitOptions = args.staged || commits.length > 0 || !!branchDiffBase || !!newFilesBase;
 
   if (fileArgs.length === 0 && !hasGitOptions) {
     console.error("❌ No files specified");
@@ -987,6 +1118,18 @@ function main() {
           error: error.message,
         });
       }
+      if (branchDiffBase) {
+        validationErrors.push({
+          fileArg: `--branch-diff=${branchDiffBase}`,
+          error: error.message,
+        });
+      }
+      if (newFilesBase) {
+        validationErrors.push({
+          fileArg: `--new-files-from=${newFilesBase}`,
+          error: error.message,
+        });
+      }
     }
 
     // Then validate each commit reference (only if repo is valid)
@@ -1001,6 +1144,30 @@ function main() {
           validationErrors.push({
             fileArg: `--commit=${commitRef}`,
             error: `Invalid commit reference: ${commitRef}`,
+          });
+        }
+      }
+
+      // Validate --branch-diff base ref
+      if (branchDiffBase) {
+        try {
+          getMergeBase(branchDiffBase);
+        } catch (error) {
+          validationErrors.push({
+            fileArg: `--branch-diff=${branchDiffBase}`,
+            error: error.message,
+          });
+        }
+      }
+
+      // Validate --new-files-from base ref
+      if (newFilesBase) {
+        try {
+          getMergeBase(newFilesBase);
+        } catch (error) {
+          validationErrors.push({
+            fileArg: `--new-files-from=${newFilesBase}`,
+            error: error.message,
           });
         }
       }
@@ -1072,6 +1239,91 @@ function main() {
         console.error(`❌ Error getting commit ${commitRef}: ${error.message}`);
         hasErrors = true;
       }
+    }
+  }
+
+  // Process --branch-diff option (all changes on branch vs base)
+  if (branchDiffBase) {
+    try {
+      const { mergeBase, stat, patch } = getBranchDiff(branchDiffBase);
+      const shortBase = mergeBase.slice(0, 8);
+
+      if (!stat && !patch) {
+        const output = `### Branch diff: ${branchDiffBase}...HEAD (merge-base: ${shortBase})\n\n(No changes)`;
+        const contentSize = Buffer.byteLength(output + "\n\n", "utf8");
+        pendingResults.push({
+          label: `[branch-diff] ${branchDiffBase}...HEAD`,
+          output,
+          contentSize,
+        });
+      } else {
+        // Stat summary as text (not valid diff syntax)
+        const statFence = safeFence(stat);
+        const statBlock = stat
+          ? `${statFence}text\n${stat}\n${statFence}\n\n`
+          : "";
+        // Patch as diff (valid unified diff)
+        const patchFence = safeFence(patch);
+        const patchBlock = patch
+          ? `${patchFence}diff\n${patch}\n${patchFence}`
+          : "";
+        const output = `### Branch diff: ${branchDiffBase}...HEAD (merge-base: ${shortBase})\n\n${statBlock}${patchBlock}`;
+        const contentSize = Buffer.byteLength(output + "\n\n", "utf8");
+        pendingResults.push({
+          label: `[branch-diff] ${branchDiffBase}...HEAD`,
+          output,
+          contentSize,
+        });
+      }
+    } catch (error) {
+      console.error(`❌ Error getting branch diff: ${error.message}`);
+      hasErrors = true;
+    }
+  }
+
+  // Process --new-files-from option (full source of added files)
+  if (newFilesBase) {
+    try {
+      const { gitRoot, files: newFiles } = getNewFilesSince(newFilesBase);
+      if (newFiles.length === 0) {
+        const output = `### New files since ${newFilesBase}\n\n(No new files)`;
+        const contentSize = Buffer.byteLength(output + "\n\n", "utf8");
+        pendingResults.push({
+          label: "[new-files] (none)",
+          output,
+          contentSize,
+        });
+      } else {
+        // Section header
+        const header = `### New files since ${newFilesBase} (${newFiles.length} files)`;
+        const headerSize = Buffer.byteLength(header + "\n\n", "utf8");
+        pendingResults.push({
+          label: `[new-files] header (${newFiles.length} files)`,
+          output: header,
+          contentSize: headerSize,
+        });
+
+        for (const relPath of newFiles) {
+          try {
+            const absPath = path.resolve(gitRoot, relPath);
+            const language = detectLanguage(absPath);
+            const content = readFileAtHead(relPath, gitRoot);
+            const output = formatCodeBlock(absPath, language, content, null);
+            const contentSize = Buffer.byteLength(output + "\n\n", "utf8");
+            pendingResults.push({
+              label: `[new] ${relPath}`,
+              output,
+              contentSize,
+            });
+          } catch (error) {
+            console.error(`❌ Error reading new file ${relPath}: ${error.message}`);
+            hasErrors = true;
+          }
+        }
+      }
+    } catch (error) {
+      console.error(`❌ Error listing new files: ${error.message}`);
+      hasErrors = true;
     }
   }
 
