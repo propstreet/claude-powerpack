@@ -1,6 +1,6 @@
 {
   "name": "claude-powerpack",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Essential productivity tools for Claude Code: deep codebase analysis agent, dependency update analysis, expert consultation docs, code extraction, PR workflows, and more",
   "author": {
     "name": "Propstreet",
@@ -16,6 +16,9 @@
     "productivity",
     "code-review",
     "pr-description",
+    "pr-audit",
+    "merge-readiness",
+    "parallel-agents",
     "requirements-gathering",
     "simplification",
     "debriefing",
