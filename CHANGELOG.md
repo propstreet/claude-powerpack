@@ -26,6 +26,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Capability-based model guidance (no hardcoded model names)
 - Replaced hardcoded model names in live guidance with capability-based phrasing so the plugin doesn't go stale as model lineups change. The `code-researcher` agent description and its README entry now say "a faster, lower-cost model" / "your most capable model" instead of naming specific tiers. (Historical CHANGELOG entries are left as-is.)
 
+### Fixed
+
+#### trim-pr build/test tooling
+- Broadened `trim-pr`'s `allowed-tools` from `Bash(npm run:*)` to `Bash(npm:*)` so bare `npm test` / `npm ci` are pre-approved during verification — the `npm run:*` pattern only matched `npm run …` and left those prompting.
+
 ## [2.1.0] - 2026-04-01
 
 ### Added

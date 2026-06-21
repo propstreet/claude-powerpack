@@ -6,7 +6,7 @@ context: fork
 allowed-tools:
   - Bash(git:*)
   - Bash(gh:*)
-  - Bash(npm run:*)
+  - Bash(npm:*)
   - Bash(npx:*)
   - Bash(ruff:*)
   - Bash(pylint:*)
