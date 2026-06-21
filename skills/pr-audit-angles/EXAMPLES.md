@@ -1,6 +1,6 @@
 # pr-audit-angles — Examples
 
-Concrete orchestration for the multi-angle audit. The script below uses the `Workflow` tool (deterministic fan-out with structured output). If your harness has no workflow primitive, the same shape works by dispatching one `Task`/subagent per angle in parallel and merging their structured replies yourself.
+Concrete orchestration for the multi-angle audit. The script below uses the `Workflow` tool (deterministic fan-out with structured output). If your harness has no workflow primitive, the same shape works by dispatching one subagent per angle (the `Agent` tool) in parallel and merging their structured replies yourself.
 
 ## Structured schemas
 

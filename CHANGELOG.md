@@ -316,6 +316,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CLAUDE.md, CONTRIBUTING.md, and comprehensive skill documentation
 - Installation instructions and troubleshooting guide
 
+[2.2.0]: https://github.com/propstreet/claude-powerpack/releases/tag/v2.2.0
 [2.1.0]: https://github.com/propstreet/claude-powerpack/releases/tag/v2.1.0
 [2.0.1]: https://github.com/propstreet/claude-powerpack/releases/tag/v2.0.1
 [2.0.0]: https://github.com/propstreet/claude-powerpack/releases/tag/v2.0.0

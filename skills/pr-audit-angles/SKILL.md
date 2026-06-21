@@ -9,7 +9,7 @@ allowed-tools:
   - Glob
   - Bash(git:*)
   - Bash(gh:*)
-  - Task
+  - Agent
 ---
 
 # PR Audit — Multi-Angle Parallel Review

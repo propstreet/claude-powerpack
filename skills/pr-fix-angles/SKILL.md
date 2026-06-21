@@ -11,7 +11,23 @@ allowed-tools:
   - Write
   - Bash(git:*)
   - Bash(gh:*)
-  - Task
+  - Bash(npm:*)
+  - Bash(pnpm:*)
+  - Bash(yarn:*)
+  - Bash(npx:*)
+  - Bash(make:*)
+  - Bash(pytest:*)
+  - Bash(ruff:*)
+  - Bash(pylint:*)
+  - Bash(go build:*)
+  - Bash(go vet:*)
+  - Bash(go test:*)
+  - Bash(cargo check:*)
+  - Bash(cargo test:*)
+  - Bash(dotnet build:*)
+  - Bash(dotnet test:*)
+  - Bash(dotnet format:*)
+  - Agent
 ---
 
 # PR Fix — Parallel Disjoint-Lane Remediation
@@ -47,12 +63,13 @@ parallel([
 ## Recipe
 
 1. **Group findings into lanes by the files they touch.** Draw boundaries so file sets are disjoint. Two findings that must edit the same file go in the *same* lane (as stages), never in two parallel lanes.
-2. **Warm the build once before dispatching** (if the repo has a build/compile step). Parallel agents that compile/test on a cold tree can race on shared build outputs.
-3. **Give every lane the shared binding-rules preamble** (below) + its lane-specific section: exclusive file list, forbidden files, required reading, and the per-finding fix spec.
-4. **Force structured output** (`completed` / `deferred` / `testsRun` / `filesTouched` / `notes`) so you merge results mechanically — see `EXAMPLES.md`.
-5. **Within a shared-file lane, thread context:** pass stage 1's result JSON into stage 2's prompt ("STAGE-1 RESULT, already applied to the tree: …") so the next stage edits current state, not the base.
-6. **The orchestrator owns the gates.** After all lanes return, *you* run the repo's full lint → build → test. Agents never run the full suite.
-7. **Report, then stop.** Summarize completed/deferred per lane and the gate result. **Never commit or stage** without an explicit request — and when asked, stage explicit paths, never a blanket `git add -A` (it sweeps in unrelated working-tree files).
+2. **Confirm a clean starting tree before dispatch.** Run `git status --short`. If the working tree has changes unrelated to the campaign, stop and ask the user to commit or stash them first — otherwise pre-existing edits get co-mingled with the fix and the final gate mis-attributes any breakage. The lane preamble *promises* agents a clean tree; this is the step that makes that promise true.
+3. **Warm the build once before dispatching** (if the repo has a build/compile step). Parallel agents that compile/test on a cold tree can race on shared build outputs.
+4. **Give every lane the shared binding-rules preamble** (below) + its lane-specific section: exclusive file list, forbidden files, required reading, and the per-finding fix spec.
+5. **Force structured output** (`completed` / `deferred` / `testsRun` / `filesTouched` / `notes`) so you merge results mechanically — see `EXAMPLES.md`.
+6. **Within a shared-file lane, thread context:** pass stage 1's result JSON into stage 2's prompt ("STAGE-1 RESULT, already applied to the tree: …") so the next stage edits current state, not the base.
+7. **The orchestrator owns the gates.** After all lanes return, *you* run the repo's full lint → build → test. Agents never run the full suite.
+8. **Report, then stop.** Summarize completed/deferred per lane and the gate result. **Never commit or stage** without an explicit request — and when asked, stage explicit paths, never a blanket `git add -A` (it sweeps in unrelated working-tree files).
 
 ## The shared lane preamble (binding rules, verbatim into every lane)
 

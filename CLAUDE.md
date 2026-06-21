@@ -140,7 +140,8 @@ context: fork
 ```
 
 - **description** must include activation trigger phrases in quotes for auto-discovery
-- **allowed-tools** use YAML array format with Bash wildcard patterns (e.g., `Bash(git:*)`) for security
+- **allowed-tools** use YAML array format with Bash wildcard patterns (e.g., `Bash(git:*)`). It is **pre-approval (suppresses permission prompts), NOT enforcement** — unlisted tools/commands are not blocked, they just prompt ([#37683](https://github.com/anthropics/claude-code/issues/37683), verified Claude Code v2.1.185). So a `context: fork` skill whose orchestrator runs repo build/test commands must list them to avoid prompts (see `trim-pr` and `pr-fix-angles`). For an actual restriction use `disallowed-tools` (added v2.1.152).
+- **Bash patterns**: `Bash(npm run:*)` does NOT match bare `npm test`/`npm ci` — use `Bash(npm:*)`. A space before `*` is a word boundary (`Bash(ls *)` ≠ `lsof`); wrappers (`timeout`, `nice`, `nohup`, …) are stripped before matching.
 - **user-invocable** is the correct spelling (`user-invocable` with c, NOT `user-invokable` with k — VS Code extension has a known bug [#23723](https://github.com/anthropics/claude-code/issues/23723))
 - **context: fork** runs skill in isolated sub-agent — but forked skills have NO conversation history and CANNOT use AskUserQuestion. Skills needing either must omit `context: fork`.
 - **Additional frontmatter fields**: `argument-hint` (autocomplete hint), `model` (per-skill model override), `hooks` (scoped hooks), `agent` (subagent type for forked skills)

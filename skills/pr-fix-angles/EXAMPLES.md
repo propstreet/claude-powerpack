@@ -1,6 +1,6 @@
 # pr-fix-angles — Examples
 
-Concrete orchestration for the disjoint-lane fix campaign. Uses the `Workflow` tool; the same shape works with manual parallel `Task` dispatch if your harness has no workflow primitive — the key invariants are *disjoint file ownership per lane* and *the orchestrator owns the gates*.
+Concrete orchestration for the disjoint-lane fix campaign. Uses the `Workflow` tool; the same shape works with manual parallel subagent dispatch (the `Agent` tool) if your harness has no workflow primitive — the key invariants are *disjoint file ownership per lane* and *the orchestrator owns the gates*.
 
 ## The fix schema (per-lane structured output)
 
@@ -47,6 +47,10 @@ export const meta = {
   phases: [{ title: 'Lane A' }, { title: 'Lane B' }, { title: 'Lane C' }],
 }
 
+// PRECONDITION (orchestrator, before launching): `git status --short` is clean. If it isn't,
+// stop and have the user commit/stash unrelated edits — otherwise they co-mingle with the campaign
+// and the final gate mis-attributes any breakage. The lane preamble promises agents a clean tree.
+
 // Lane A's findings all touch one hot file → run as sequential stages, threading results.
 // Lanes B and C own disjoint files → run concurrently alongside A.
 const [laneA, laneB, laneC] = await parallel([
@@ -83,6 +87,6 @@ const verified = await parallel(candidateFindings.map(f => () =>
   agent(`Adversarially VERIFY against current code. Default to "not real" unless proven with file:line.
           Check whether a recent commit already closed it.\n\n${JSON.stringify(f)}`,
         { label: 'verify', schema: VERDICT }).then(v => ({ f, v }))))
-const toFix = verified.filter(Boolean).filter(x => x.v.isReal && x.v.reachable && !x.v.alreadyFixed).map(x => x.f)
+const toFix = verified.filter(x => x.v && x.v.isReal && x.v.reachable && !x.v.alreadyFixed).map(x => x.f)
 // → partition toFix into disjoint lanes and run the campaign above.
 ```

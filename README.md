@@ -375,7 +375,7 @@ Team members who trust the repository folder will automatically have the plugin 
 - Verifies every candidate against current code before reporting — a subagent claim is a lead, not a verdict
 - Synthesizes one merge-readiness verdict; hands verified findings to pr-fix-angles
 
-**Allowed tools:** Read, Grep, Glob, Bash(git, gh), Task
+**Allowed tools:** Read, Grep, Glob, Bash(git, gh), Agent
 
 ### pr-fix-angles (v2.2.0)
 
@@ -393,7 +393,7 @@ Team members who trust the repository folder will automatically have the plugin 
 - Keeps the orchestrator in charge of the final lint→build→test gate and the commit decision
 - Optional skeptical find→verify pre-step so agents never fix phantom or already-closed findings
 
-**Allowed tools:** Read, Grep, Glob, Edit, Write, Bash(git, gh), Task
+**Allowed tools:** Read, Grep, Glob, Edit, Write, Bash(git, gh, npm, pnpm, yarn, npx, make, pytest, go, cargo, dotnet), Agent
 
 ### analyze-deps (v1.9.0)
 
