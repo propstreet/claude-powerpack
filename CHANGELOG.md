@@ -5,6 +5,32 @@ All notable changes to Claude Powerpack will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-06-19
+
+### Added
+
+#### PR Audit Angles Skill
+- New `pr-audit-angles` skill — multi-angle parallel audit of a large PR or branch before merge. Splits the change into independent angles (matched to the changed surface), dispatches one capable subagent per angle anchored to the repo's *own* conventions, and has the orchestrator verify every candidate finding against current code before synthesizing a single merge-readiness verdict.
+- Repo-agnostic by design: angles, hard rules, and the lint/build/test commands are discovered from the host repo's docs, configs, and CI rather than hardcoded.
+- Each angle returns a uniform Blockers / Important / New-concepts-verdict / Verified-clean report; a subagent claim is treated as a lead, not a verdict, until the orchestrator confirms it with a file:line citation.
+- Includes `EXAMPLES.md` with ready-to-adapt structured schemas and a parallel-orchestration script (plus a find→adversarially-verify variant).
+
+#### PR Fix Angles Skill
+- New `pr-fix-angles` skill — the execution companion to `pr-audit-angles`. Takes a set of verified findings and fixes them all by partitioning into lanes of **exclusive file ownership**, so multiple subagents edit in parallel without merge conflicts. A lane whose findings share a hot file runs as sequential stages; independent lanes run concurrently.
+- The orchestrator owns the single final lint→build→test gate and never commits without you; agents leave changes in the working tree and defer any out-of-lane edits.
+- Emphasizes hand-writing the failing-test design into each fix prompt, freezing shared wire contracts for the campaign, and a skeptical find→verify pre-step so agents never fix phantom or already-closed findings.
+- Includes `EXAMPLES.md` with the per-lane fix schema and a disjoint-lane orchestration script (with one lane staged on a shared file).
+
+### Changed
+
+#### Capability-based model guidance (no hardcoded model names)
+- Replaced hardcoded model names in live guidance with capability-based phrasing so the plugin doesn't go stale as model lineups change. The `code-researcher` agent description and its README entry now say "a faster, lower-cost model" / "your most capable model" instead of naming specific tiers. (Historical CHANGELOG entries are left as-is.)
+
+### Fixed
+
+#### trim-pr build/test tooling
+- Broadened `trim-pr`'s `allowed-tools` from `Bash(npm run:*)` to `Bash(npm:*)` so bare `npm test` / `npm ci` are pre-approved during verification — the `npm run:*` pattern only matched `npm run …` and left those prompting.
+
 ## [2.1.0] - 2026-04-01
 
 ### Added
@@ -295,6 +321,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CLAUDE.md, CONTRIBUTING.md, and comprehensive skill documentation
 - Installation instructions and troubleshooting guide
 
+[2.2.0]: https://github.com/propstreet/claude-powerpack/releases/tag/v2.2.0
 [2.1.0]: https://github.com/propstreet/claude-powerpack/releases/tag/v2.1.0
 [2.0.1]: https://github.com/propstreet/claude-powerpack/releases/tag/v2.0.1
 [2.0.0]: https://github.com/propstreet/claude-powerpack/releases/tag/v2.0.0

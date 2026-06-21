@@ -3,7 +3,7 @@
 > Essential productivity tools for Claude Code: deep codebase analysis agent, expert consultation docs, code extraction, PR workflows, and more
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-2.1.0-green.svg)](https://github.com/propstreet/claude-powerpack/releases)
+[![Version](https://img.shields.io/badge/version-2.2.0-green.svg)](https://github.com/propstreet/claude-powerpack/releases)
 
 ## Features
 
@@ -55,6 +55,26 @@ Create comprehensive PR descriptions that document every meaningful change:
 - **Multi-Category**: Features, bug fixes, tests, docs, config - nothing missed
 - **Structured Output**: Organized sections for user impact and technical details
 - **GitHub Integration**: Updates PR via `gh pr edit`
+
+### PR Audit Angles Skill
+
+Multi-angle parallel audit of a large PR or branch before merge:
+
+- **Parallel Angles**: One capable subagent per angle (backend, data/schema, API, frontend, auth, async, i18n, tests, completeness/parity), matched to the changed surface
+- **Repo-Anchored**: Angles, hard rules, and commands are discovered from *your* repo's docs, configs, and CI — not hardcoded
+- **Lead, Not Verdict**: Every candidate finding is verified against current code (with a file:line citation) before it reaches you
+- **Merge-Readiness Verdict**: One synthesized report — Blockers / Important / New-concepts table / Verified-clean
+- **Pairs With Fix**: Hand the verified findings straight to the PR Fix Angles skill
+
+### PR Fix Angles Skill
+
+Parallel disjoint-lane fix campaign — the execution companion to PR Audit Angles:
+
+- **Disjoint Lanes**: Findings partitioned by exclusive file ownership, so multiple subagents edit in parallel without merge conflicts
+- **Staged Hot Files**: A lane whose findings share a file runs as sequential stages; independent lanes run concurrently
+- **Orchestrator-Owned Gates**: The main agent runs the single final lint→build→test and never commits without you
+- **Test-First Fixes**: The failing-test design is written into each fix prompt; assertions are never weakened to go green
+- **Skeptical Pre-Step**: Optional find→adversarially-verify pass so agents never fix phantom or already-closed findings
 
 ### Analyze Dependencies Skill
 
@@ -130,6 +150,14 @@ Ask Claude to trim your PR before merging. Claude will identify accumulated cruf
 ### Update PR Skill
 
 Ask Claude to update or prepare a PR description. Claude will systematically inventory all changes, categorize them, and create a structured summary. See [Skills Included](#agents--skills-included) for example prompts.
+
+### PR Audit Angles Skill
+
+Ask Claude to audit a PR or branch before merge. Claude splits the change into angles, runs one subagent per angle in parallel anchored to your repo's conventions, verifies each finding against current code, and returns a single merge-readiness verdict. See [Skills Included](#agents--skills-included) for example prompts.
+
+### PR Fix Angles Skill
+
+Ask Claude to fix all the verified findings. Claude partitions them into disjoint-file lanes, runs subagents in parallel without merge conflicts, owns the final lint→build→test gate, and leaves the changes for you to commit. See [Skills Included](#agents--skills-included) for example prompts.
 
 ### Analyze Dependencies Skill
 
@@ -217,6 +245,14 @@ Team members who trust the repository folder will automatically have the plugin 
 - **[EXAMPLES.md](skills/update-pr/EXAMPLES.md)** - Good vs bad PR examples
 - **[README](skills/update-pr/README.md)** - Quick reference
 
+### PR Audit Angles Skill
+- **[SKILL.md](skills/pr-audit-angles/SKILL.md)** - Complete multi-angle audit workflow
+- **[EXAMPLES.md](skills/pr-audit-angles/EXAMPLES.md)** - Structured schemas + parallel-orchestration script
+
+### PR Fix Angles Skill
+- **[SKILL.md](skills/pr-fix-angles/SKILL.md)** - Complete disjoint-lane fix-campaign workflow
+- **[EXAMPLES.md](skills/pr-fix-angles/EXAMPLES.md)** - Fix schema + disjoint-lane orchestration script
+
 ### Analyze Dependencies Skill
 - **[SKILL.md](skills/analyze-deps/SKILL.md)** - Complete analysis workflow
 - **[README](skills/analyze-deps/README.md)** - Quick reference
@@ -245,7 +281,7 @@ Team members who trust the repository folder will automatically have the plugin 
 - Audits for inconsistencies with severity-rated findings
 - Maps architecture hierarchies with ASCII diagrams
 
-**Model guidance:** Use Sonnet for fast lookups and pattern counting; use Opus for deep architecture mapping and multi-layer flow tracing.
+**Model guidance:** Use a faster, lower-cost model for fast lookups and pattern counting; use your most capable model for deep architecture mapping and multi-layer flow tracing.
 
 **Allowed tools:** Bash(ast-grep, rg, grep, find, git, jq, wc, head, tail, cat, sort, uniq, cut, tr, xargs, sed, awk, diff), Read, Glob, Grep
 
@@ -321,6 +357,43 @@ Team members who trust the repository folder will automatically have the plugin 
 - Saves to `/tmp/pr-summary.md` and updates PR via `gh pr edit`
 
 **Allowed tools:** Bash, Read, Write, Edit, Glob, Grep
+
+### pr-audit-angles (v2.2.0)
+
+**Example prompts:**
+```
+"Audit this PR before I merge"
+"Review the branch from every angle"
+"Am I introducing new concepts where patterns already exist?"
+"Is this safe to merge?"
+```
+
+**What it does:**
+- Splits a large diff into independent angles matched to the changed surface
+- Dispatches one capable subagent per angle in parallel, anchored to the repo's own docs/conventions
+- Forces uniform structured findings (Blockers / Important / New-concepts verdict / Verified-clean)
+- Verifies every candidate against current code before reporting — a subagent claim is a lead, not a verdict
+- Synthesizes one merge-readiness verdict; hands verified findings to pr-fix-angles
+
+**Allowed tools:** Read, Grep, Glob, Bash(git, gh), Agent
+
+### pr-fix-angles (v2.2.0)
+
+**Example prompts:**
+```
+"Fix all the audit findings, blocker to minor"
+"Patch everything and make it merge-ready"
+"Run a fix campaign on this PR"
+```
+
+**What it does:**
+- Partitions verified findings into lanes of exclusive file ownership for conflict-free parallel edits
+- Runs a shared-hot-file lane as sequential stages; independent lanes concurrently
+- Writes the failing-test design into each fix prompt; never weakens assertions to go green
+- Keeps the orchestrator in charge of the final lint→build→test gate and the commit decision
+- Optional skeptical find→verify pre-step so agents never fix phantom or already-closed findings
+
+**Allowed tools:** Read, Grep, Glob, Edit, Write, Bash(git, gh, npm, pnpm, yarn, npx, make, pytest, go, cargo, dotnet), Agent
 
 ### analyze-deps (v1.9.0)
 

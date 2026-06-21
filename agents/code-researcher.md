@@ -1,6 +1,6 @@
 ---
 name: code-researcher
-description: "Deep code analysis using CLI tools (ast-grep, grep, find, git). Use for tracing execution flows, finding usage patterns, understanding architectural decisions, or investigating complex bugs. Model guidance: use sonnet for fast lookups and pattern counting; use opus for deep architecture mapping and multi-layer flow tracing."
+description: "Deep code analysis using CLI tools (ast-grep, grep, find, git). Use for tracing execution flows, finding usage patterns, understanding architectural decisions, or investigating complex bugs. Model guidance: use a faster, lower-cost model for fast lookups and pattern counting; use your most capable model for deep architecture mapping and multi-layer flow tracing."
 model: inherit
 color: yellow
 tools:
